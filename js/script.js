@@ -3289,7 +3289,7 @@ function attachAuthForms() {
 }
 
 // TODO: replace with your real email address
-const CONTACT_EMAIL = "aliyujaxuli@gmail.com";
+const CONTACT_EMAIL = "you@yourdomain.com";
 
 function attachContactForm() {
   const contactForm = document.querySelector(".contact-form");
