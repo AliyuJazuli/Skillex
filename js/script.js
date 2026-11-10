@@ -2,6 +2,7 @@ const navToggle = document.querySelector(".nav-toggle");
 const navLinks = document.querySelector(".nav-links");
 const themeToggle = document.querySelector(".theme-toggle");
 const body = document.body;
+const backend = window.SkillexBackend;
 let lessonViewStart = null;
 const STORAGE_KEYS = {
   theme: "skillswap-theme",
@@ -16,6 +17,30 @@ const STORAGE_KEYS = {
   communities: "skillswap-communities",
   discussions: "skillswap-discussions",
 };
+
+function showBackendStatus(message) {
+  let status = document.querySelector("[data-backend-status]");
+  if (!status) {
+    status = document.createElement("p");
+    status.className = "backend-status";
+    status.dataset.backendStatus = "true";
+    status.setAttribute("role", "status");
+    status.setAttribute("aria-live", "polite");
+    document.querySelector("main")?.prepend(status);
+  }
+  status.textContent = message;
+}
+
+function reportBackendError(error, operation) {
+  console.error(`Skillex ${operation} failed:`, error);
+  showBackendStatus(`We couldn't ${operation}. ${error.message || "Please try again."}`);
+}
+
+function persistForCurrentUser(task, operation) {
+  const user = getCurrentUser();
+  if (!backend?.isConfigured || !user?.id) return;
+  Promise.resolve().then(() => task(user)).catch((error) => reportBackendError(error, operation));
+}
 
 const skillCatalog = [
   {
@@ -379,7 +404,7 @@ const skillCatalog = [
         memoryAid: "Build it, test it on mobile, then ship it — a project isn't done until it's live.",
         exercises: ["Write your portfolio content (bio, 3 project blurbs) before touching CSS.", "Build and style all sections responsively.", "Deploy the finished page with GitHub Pages or Netlify."],
         quiz: { q: "What's a free way to publish a static HTML site?", options: ["It's impossible without a paid server", "GitHub Pages or Netlify", "Only through a domain registrar", "Email attachment"], answer: 1 },
-        miniProject: "Publish your finished portfolio page to a live URL and share it in your SkillSwap profile.",
+        miniProject: "Publish your finished portfolio page to a live URL and share it in your Skillex profile.",
         summary: "A published, working portfolio page is the real-world outcome of this course — not just a local file.",
         revision: "Revisit this project every few months and update it as your skills grow.",
         nextLesson: ""
@@ -461,7 +486,7 @@ const skillCatalog = [
         analogy: "Different boxes are used for different items — one for books, one for tools, one for fruit.",
         visual: "const title = 'Hello';\nconst age = 25;\nconst isReady = true;",
         explanation: "JavaScript has primitive types such as string, number, boolean, undefined, and null.",
-        examples: "console.log(typeof 'SkillSwap');",
+        examples: "console.log(typeof 'Skillex');",
         interactive: "Write a short script that prints different values and their types.",
         commonMistakes: ["Confusing strings and numbers", "Forgetting that true/false are booleans"],
         memoryAid: "Use typeof to inspect data types while you learn.",
@@ -1882,8 +1907,6 @@ function createCourse(id, title, category, level, description, outcome) {
 }
 
 [
-  ["ai-automation", "AI Automation", "Development", "Intermediate", "Build responsible workflows that reduce repetitive work.", "Create an automation plan and a tested workflow."],
-  ["prompt-engineering", "AI Prompt Engineering", "Development", "Beginner", "Write clearer prompts and evaluate AI-assisted work responsibly.", "Build a prompt library for a real study or work task."],
   ["mathematics", "Mathematics", "Academic", "Beginner", "Strengthen problem solving with clear methods and peer explanation.", "Solve and explain a set of university-level practice problems."],
   ["public-speaking", "Public Speaking", "Communication", "Beginner", "Build confidence, structure, and presence for presentations.", "Deliver a clear five-minute presentation with peer feedback."],
   ["video-editing", "Video Editing", "Creative", "Beginner", "Plan, cut, refine, and publish compelling short videos.", "Edit a polished one-minute video story."]
@@ -2313,7 +2336,12 @@ function getCurrentUser() {
 }
 
 function saveCurrentUser(user) {
-  writeStorage(STORAGE_KEYS.currentUser, user);
+  if (!user) {
+    localStorage.removeItem(STORAGE_KEYS.currentUser);
+    return;
+  }
+  const { password, ...safeUser } = user;
+  writeStorage(STORAGE_KEYS.currentUser, safeUser);
 }
 
 function getUsers() {
@@ -2330,6 +2358,7 @@ function getSavedSkills() {
 
 function saveSavedSkills(skills) {
   writeStorage(STORAGE_KEYS.savedSkills, skills);
+  persistForCurrentUser((user) => backend.replaceSavedSkills(user.id, skills), "save your skills");
 }
 
 function getSkillProgressMap() {
@@ -2351,6 +2380,7 @@ function saveSkillProgress(skillId, updates) {
   const timestamp = Date.now();
   progressMap[skillId] = { ...current, ...updates, lastUpdated: timestamp };
   saveSkillProgressMap(progressMap);
+  persistForCurrentUser((user) => backend.saveProgress(user.id, skillId, progressMap[skillId]), "save your learning progress");
   return progressMap[skillId];
 }
 
@@ -2432,6 +2462,7 @@ function getSavedLessons() {
 
 function saveSavedLessons(list) {
   writeStorage(STORAGE_KEYS.savedLessons, list);
+  persistForCurrentUser((user) => backend.replaceSavedLessons(user.id, list), "save your lessons");
 }
 
 function toggleLessonBookmark(skillId, lessonTitle) {
@@ -2456,6 +2487,8 @@ function addTimeSpent(skillId, seconds) {
   const map = readStorage(STORAGE_KEYS.timeSpent, {});
   map[skillId] = (map[skillId] || 0) + seconds;
   writeStorage(STORAGE_KEYS.timeSpent, map);
+  const user = getCurrentUser();
+  if (user?.id) saveSkillProgress(skillId, { timeSpentSeconds: map[skillId] });
 }
 
 function getSkillById(skillId) {
@@ -2638,7 +2671,9 @@ function ensureProtectedAccess() {
   const protectedPages = ["dashboard.html", "profile.html", "saved-skills.html"];
   if (protectedPages.includes(page) && !getCurrentUser()) {
     window.location.href = "login.html";
+    return false;
   }
+  return true;
 }
 
 function injectQuickNavigation() {
@@ -2647,18 +2682,17 @@ function injectQuickNavigation() {
 
   const quickNav = document.createElement("div");
   quickNav.className = "quick-nav";
-  quickNav.setAttribute("aria-label", "Quick page navigation");
   quickNav.innerHTML = `
     <div class="container">
-      <nav class="quick-nav__links">
-        <a class="quick-nav__link" href="index.html">Home</a>
-        <a class="quick-nav__link" href="browse.html">Browse</a>
-        <a class="quick-nav__link" href="dashboard.html">Dashboard</a>
-        <a class="quick-nav__link" href="swap.html">Swap</a>
-        <a class="quick-nav__link" href="communities.html">Communities</a>
-        <a class="quick-nav__link" href="saved-skills.html">Saved</a>
-        <a class="quick-nav__link" href="about.html">About</a>
-        <a class="quick-nav__link" href="contact.html">Contact</a>
+      <nav class="quick-nav__links" aria-label="Main navigation">
+        <a class="quick-nav__link" href="index.html"><svg aria-hidden="true" viewBox="0 0 24 24"><path d="m3 10 9-7 9 7v10a1 1 0 0 1-1 1h-5v-7H9v7H4a1 1 0 0 1-1-1z"/></svg><span>Home</span></a>
+        <a class="quick-nav__link" href="browse.html"><svg aria-hidden="true" viewBox="0 0 24 24"><circle cx="10.8" cy="10.8" r="6.8"/><path d="m16 16 5 5"/></svg><span>Browse</span></a>
+        <a class="quick-nav__link" href="dashboard.html"><svg aria-hidden="true" viewBox="0 0 24 24"><rect x="3" y="3" width="8" height="8" rx="1.5"/><rect x="13" y="3" width="8" height="5" rx="1.5"/><rect x="13" y="10" width="8" height="11" rx="1.5"/><rect x="3" y="13" width="8" height="8" rx="1.5"/></svg><span>Dashboard</span></a>
+        <a class="quick-nav__link" href="swap.html"><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M4 7h15l-3-3M20 17H5l3 3"/></svg><span>Swap</span></a>
+        <a class="quick-nav__link" href="communities.html"><svg aria-hidden="true" viewBox="0 0 24 24"><circle cx="9" cy="8" r="3"/><path d="M3 20v-1a6 6 0 0 1 12 0v1zm13-9a3 3 0 1 0-1-5.8M18 14a5 5 0 0 1 3 4.6v1"/></svg><span>Community</span></a>
+        <a class="quick-nav__link" href="saved-skills.html"><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M6 4a1 1 0 0 1 1-1h10a1 1 0 0 1 1 1v17l-6-4-6 4z"/></svg><span>Saved</span></a>
+        <a class="quick-nav__link" href="about.html"><svg aria-hidden="true" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 11v5m0-9h.01"/></svg><span>About</span></a>
+        <a class="quick-nav__link" href="contact.html"><svg aria-hidden="true" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="m4 7 8 6 8-6"/></svg><span>Contact</span></a>
       </nav>
     </div>
   `;
@@ -2671,7 +2705,9 @@ function injectQuickNavigation() {
   const currentPage = window.location.pathname.split("/").pop() || "index.html";
   document.querySelectorAll(".quick-nav__link").forEach((link) => {
     const targetPage = link.getAttribute("href")?.split("/").pop() || "index.html";
-    link.classList.toggle("active", currentPage === targetPage);
+    const active = currentPage === targetPage;
+    link.classList.toggle("active", active);
+    if (active) link.setAttribute("aria-current", "page");
   });
 }
 
@@ -2827,7 +2863,7 @@ function renderDashboard() {
     const goals = [currentUser.learnGoals, currentUser.teachGoals].filter(Boolean).join(" • ");
     profileContainer.innerHTML = `
       <h3>${currentUser.name}</h3>
-      <p>${currentUser.bio || "Keep building your learning journey with SkillSwap."}</p>
+      <p>${currentUser.bio || "Keep building your learning journey with Skillex."}</p>
       <p><strong>Email:</strong> ${currentUser.email}</p>
       <p><strong>Role:</strong> ${currentUser.role || "Learner"}</p>
       ${goals ? `<p><strong>Learning focus:</strong> ${goals}</p>` : ""}
@@ -3030,7 +3066,7 @@ function renderSkillDetailPage() {
       <h3>Projects you will build</h3>
       <ul class="course-project-list">${(skill.projects || skill.practice || []).map((item) => `<li>${item}</li>`).join("")}</ul>
       <div class="detail-actions">
-        <button class="btn" id="start-learning-btn" type="button">Learn with SkillSwap</button>
+        <button class="btn" id="start-learning-btn" type="button">Learn with Skillex</button>
         <a class="btn btn-secondary" href="swap.html">Learn from students</a>
         <button class="btn btn-secondary" id="save-skill-btn" type="button">Save skill</button>
       </div>
@@ -3152,35 +3188,34 @@ lessonRenderer = window.SkillSwapLearningUI?.createLessonRenderer({
   toggleLessonBookmark,
   addTimeSpent,
   renderSkillDetailPage,
+  escapeHTML,
   defaultCodeFor
 });
 
-function handleLoginSubmit(event) {
+async function handleLoginSubmit(event) {
   event.preventDefault();
   const form = event.target;
   const formData = new FormData(form);
   const email = formData.get("email")?.toString().trim() || "";
   const password = formData.get("password")?.toString().trim() || "";
   const status = document.getElementById("login-status");
-  const users = getUsers();
-  const user = users.find((entry) => entry.email === email);
-
-  if (!user) {
-    if (status) status.textContent = "No account found for that email. Please sign up first.";
-    return;
+  const submit = form.querySelector('button[type="submit"]');
+  if (submit) submit.disabled = true;
+  try {
+    const result = await backend.signIn(email, password);
+    const profile = await backend.loadProfile(result.user, skillCatalog);
+    saveCurrentUser(profile);
+    await hydrateUserData(profile.id);
+    if (status) status.textContent = "Login successful. Redirecting...";
+    window.location.href = "dashboard.html";
+  } catch (error) {
+    if (status) status.textContent = error.message || "Unable to log in. Please check your details and try again.";
+  } finally {
+    if (submit) submit.disabled = false;
   }
-
-  if (user.password !== password) {
-    if (status) status.textContent = "The password you entered is incorrect.";
-    return;
-  }
-
-  saveCurrentUser(user);
-  if (status) status.textContent = "Login successful. Redirecting...";
-  window.location.href = "dashboard.html";
 }
 
-function handleSignupSubmit(event) {
+async function handleSignupSubmit(event) {
   event.preventDefault();
   const form = event.target;
   const formData = new FormData(form);
@@ -3192,7 +3227,7 @@ function handleSignupSubmit(event) {
   const teachGoals = formData.get("teachGoals")?.toString().trim() || "";
   const role = formData.get("role")?.toString().trim() || "Learner";
   const status = document.getElementById("signup-status");
-  const users = getUsers();
+  const submit = form.querySelector('button[type="submit"]');
 
   if (!name || !email || !password) {
     if (status) status.textContent = "Please fill in your name, email, and password.";
@@ -3204,34 +3239,26 @@ function handleSignupSubmit(event) {
     return;
   }
 
-  if (users.some((user) => user.email === email)) {
-    if (status) status.textContent = "That email already has an account. Please log in instead.";
-    return;
+  if (submit) submit.disabled = true;
+  try {
+    const result = await backend.signUp({ name, email, password, bio, learnGoals, teachGoals, role });
+    if (result.session) {
+      const profile = await backend.loadProfile(result.user, skillCatalog);
+      saveCurrentUser(profile);
+      await hydrateUserData(profile.id);
+      if (status) status.textContent = "Account created successfully. Redirecting...";
+      window.location.href = "dashboard.html";
+      return;
+    }
+    if (status) status.textContent = "Account created. Check your email for a confirmation link before logging in.";
+  } catch (error) {
+    if (status) status.textContent = error.message || "Unable to create your account. Please try again.";
+  } finally {
+    if (submit) submit.disabled = false;
   }
-
-  const newUser = {
-    name,
-    email,
-    password,
-    bio,
-    learnGoals,
-    teachGoals,
-    role,
-    joinedAt: new Date().toISOString(),
-    mentorStatus: role === "Teacher" || role === "Both" ? "Mentor candidate" : "Learner"
-  };
-  users.push(newUser);
-  saveUsers(users);
-  saveCurrentUser(newUser);
-  saveSavedSkills(["html-css", "javascript", "python"]);
-  saveSkillProgress("html-css", { completedLessons: [], activeLesson: "Introduction to HTML" });
-  saveSkillProgress("javascript", { completedLessons: [], activeLesson: "Variables" });
-  saveSkillProgress("python", { completedLessons: [], activeLesson: "Getting Started" });
-  if (status) status.textContent = "Account created successfully. Redirecting...";
-  window.location.href = "dashboard.html";
 }
 
-function handleProfileSubmit(event) {
+async function handleProfileSubmit(event) {
   event.preventDefault();
   const form = event.target;
   const formData = new FormData(form);
@@ -3240,26 +3267,31 @@ function handleProfileSubmit(event) {
   const bio = formData.get("bio")?.toString().trim() || "";
   const status = document.getElementById("profile-status");
   const currentUser = getCurrentUser();
-  const users = getUsers();
 
   if (!currentUser) return;
-
-  const duplicate = users.find((user) => user.email === email && user.email !== currentUser.email);
-  if (duplicate) {
-    if (status) status.textContent = "That email is already in use.";
-    return;
-  }
-
   const learnGoals = formData.get("learnGoals")?.toString().trim() || "";
   const teachGoals = formData.get("teachGoals")?.toString().trim() || "";
-  const updatedUser = { ...currentUser, name, email, bio, learnGoals, teachGoals };
-  const index = users.findIndex((user) => user.email === currentUser.email);
-  if (index >= 0) {
-    users[index] = updatedUser;
-    saveUsers(users);
+  const submit = form.querySelector('button[type="submit"]');
+  if (submit) submit.disabled = true;
+  try {
+    const result = await backend.updateProfile(currentUser, {
+      name,
+      email,
+      bio,
+      learnGoals,
+      teachGoals
+    }, skillCatalog);
+    saveCurrentUser(result.profile);
+    if (status) {
+      status.textContent = result.emailChangePending
+        ? "Profile saved. Check your inbox to confirm the email address change."
+        : "Your profile has been updated.";
+    }
+  } catch (error) {
+    if (status) status.textContent = error.message || "Unable to update your profile. Please try again.";
+  } finally {
+    if (submit) submit.disabled = false;
   }
-  saveCurrentUser(updatedUser);
-  if (status) status.textContent = "Your profile has been updated.";
 }
 
 function attachAuthForms() {
@@ -3271,9 +3303,16 @@ function attachAuthForms() {
   loginForm?.addEventListener("submit", handleLoginSubmit);
   signupForm?.addEventListener("submit", handleSignupSubmit);
   profileForm?.addEventListener("submit", handleProfileSubmit);
-  logoutButton?.addEventListener("click", () => {
-    localStorage.removeItem(STORAGE_KEYS.currentUser);
-    window.location.href = "login.html";
+  logoutButton?.addEventListener("click", async () => {
+    logoutButton.disabled = true;
+    try {
+      await backend.signOut();
+      saveCurrentUser(null);
+      window.location.href = "login.html";
+    } catch (error) {
+      reportBackendError(error, "log out");
+      logoutButton.disabled = false;
+    }
   });
 
   if (profileForm) {
@@ -3333,16 +3372,6 @@ function attachContactForm() {
   }
 }
 
-updateAuthLinks();
-ensureProtectedAccess();
-injectQuickNavigation();
-attachBrowseInteractions();
-renderDashboard();
-renderSavedSkillsPage();
-renderSkillDetailPage();
-attachAuthForms();
-attachContactForm();
-
 function escapeHTML(value) {
   const element = document.createElement("div");
   element.textContent = String(value || "");
@@ -3385,49 +3414,101 @@ function attachSwapPage() {
 function renderSwapMatches(learnSkill, teachSkill, message) {
   const target = document.getElementById("swap-matches");
   if (!target) return;
-  // Match against real registered accounts (their stated teach/learn goals),
-  // not invented demo profiles. This only searches accounts that exist in
-  // this browser's storage, since SkillSwap has no shared backend yet.
   const currentUser = getCurrentUser();
-  const candidates = getUsers().filter((account) => account.email !== currentUser?.email);
-  const matches = candidates.filter((account) => {
-    const teaches = (account.teachGoals || "").toLowerCase();
-    const learns = (account.learnGoals || "").toLowerCase();
-    return teaches.includes(learnSkill.toLowerCase()) || learns.includes(teachSkill.toLowerCase());
-  });
-  if (!matches.length) {
-    target.innerHTML = `<p class="status-pill">No matching students found yet for these skills. Invite a friend to sign up, or check back once more students join SkillSwap.</p>`;
+  const learnSkillId = findSkillId(learnSkill);
+  const teachSkillId = findSkillId(teachSkill);
+  if (!currentUser?.id || !learnSkillId || !teachSkillId) {
+    target.innerHTML = `<p class="status-pill">Sign in and select skills from the catalog to find a peer.</p>`;
     return;
   }
-  target.innerHTML = matches.map((account) => `
-    <article class="skill-card"><div class="skill-card__top"><h3>${escapeHTML(account.name || account.email)}</h3></div>
-      <p>Teaches: ${escapeHTML(account.teachGoals || "Not specified")}</p><p>Wants to learn: ${escapeHTML(account.learnGoals || "Not specified")}</p>
-      <div class="skill-card__actions"><button class="btn btn-small send-swap-btn" data-peer="${escapeHTML(account.email)}" data-peer-name="${escapeHTML(account.name || account.email)}" data-learn="${escapeHTML(learnSkill)}" data-teach="${escapeHTML(teachSkill)}" data-message="${escapeHTML(message || "")}" type="button">Send swap request</button></div></article>`).join("");
-  target.querySelectorAll(".send-swap-btn").forEach((button) => button.addEventListener("click", () => {
-    const user = getCurrentUser();
-    if (!user) { window.location.href = "login.html"; return; }
-    const peerId = button.dataset.peer;
-    const peerName = button.dataset.peerName;
-    const requests = getSwapRequests();
-    if (requests.some((request) => request.peerId === peerId && request.status !== "Cancelled")) { alert("You already have an active request with this student."); return; }
-    requests.unshift({ id: `${Date.now()}-${peerId}`, peerId, peerName, learnSkill: button.dataset.learn, teachSkill: button.dataset.teach, message: button.dataset.message, status: "Requested", createdAt: new Date().toLocaleDateString() });
-    saveSwapRequests(requests); renderSwapRequests(); button.textContent = "Request sent"; button.disabled = true;
-  }));
+  target.innerHTML = `<p class="status-pill">Searching Skillex members…</p>`;
+  backend.loadMatches(currentUser.id).then((entries) => {
+    const peers = new Map();
+    entries.forEach((entry) => {
+      if (!peers.has(entry.user_id)) peers.set(entry.user_id, { id: entry.user_id, name: entry.name, bio: entry.bio, teaches: [], learns: [] });
+      peers.get(entry.user_id)[entry.intent === "teach" ? "teaches" : "learns"].push(entry.skill_id);
+    });
+    const matches = [...peers.values()].filter((peer) =>
+      peer.teaches.includes(learnSkillId) || peer.learns.includes(teachSkillId)
+    );
+    if (!matches.length) {
+      target.innerHTML = `<p class="status-pill">No matching members found yet. Add your skills to your profile and check again later.</p>`;
+      return;
+    }
+    target.innerHTML = matches.map((peer) => `
+      <article class="skill-card">
+        <div class="skill-card__top"><h3>${escapeHTML(peer.name)}</h3></div>
+        <p>${escapeHTML(peer.bio || "Skillex member")}</p>
+        <p>Skills offered: ${peer.teaches.map((id) => escapeHTML(getSkillById(id)?.title || id)).join(", ") || "Not specified"}</p>
+        <p>Wants to learn: ${peer.learns.map((id) => escapeHTML(getSkillById(id)?.title || id)).join(", ") || "Not specified"}</p>
+        <div class="skill-card__actions"><button class="btn btn-small send-swap-btn" data-peer="${escapeHTML(peer.id)}" data-learn="${escapeHTML(learnSkillId)}" data-teach="${escapeHTML(teachSkillId)}" type="button">Send swap request</button></div>
+      </article>`).join("");
+    target.querySelectorAll(".send-swap-btn").forEach((button) => button.addEventListener("click", async () => {
+      button.disabled = true;
+      try {
+        const duplicate = getSwapRequests().some((request) =>
+          request.receiverId === button.dataset.peer && ["requested", "accepted"].includes(request.status)
+        );
+        if (duplicate) {
+          button.textContent = "Request already sent";
+          return;
+        }
+        await backend.createSwapRequest({
+          requesterId: currentUser.id,
+          receiverId: button.dataset.peer,
+          learnSkillId: button.dataset.learn,
+          teachSkillId: button.dataset.teach,
+          message
+        });
+        await hydrateUserData(currentUser.id);
+        renderSwapRequests();
+        button.textContent = "Request sent";
+      } catch (error) {
+        reportBackendError(error, "send your exchange request");
+        button.disabled = false;
+      }
+    }));
+  }).catch((error) => {
+    reportBackendError(error, "search for members");
+    target.innerHTML = `<p class="status-pill">We couldn't load member matches. Please try again.</p>`;
+  });
 }
 
 function renderSwapRequests() {
   const target = document.getElementById("swap-requests");
+  const user = getCurrentUser();
+  if (!user?.id) {
+    if (target) target.innerHTML = `<p class="status-pill">Log in to view your exchange requests.</p>`;
+    renderSwapSummary();
+    return;
+  }
   const requests = getSwapRequests();
   if (target) {
-    target.innerHTML = requests.length ? requests.map((request) => `<article class="swap-request"><div class="swap-request__top"><div><h3>${escapeHTML(request.peerName)}</h3><p>You learn <strong>${escapeHTML(request.learnSkill)}</strong> · You teach <strong>${escapeHTML(request.teachSkill)}</strong></p></div><span class="status-pill">${escapeHTML(request.status)}</span></div>${request.message ? `<p>“${escapeHTML(request.message)}”</p>` : ""}<div class="swap-request__actions">${request.status === "Requested" ? `<button class="btn btn-small swap-action" data-id="${request.id}" data-status="Confirmed">Confirm session</button>` : ""}${request.status === "Confirmed" ? `<button class="btn btn-small swap-action" data-id="${request.id}" data-status="Completed">Mark completed</button>` : ""}${request.status !== "Completed" && request.status !== "Cancelled" ? `<button class="btn-secondary btn btn-small swap-action" data-id="${request.id}" data-status="Cancelled">Cancel</button>` : ""}</div></article>`).join("") : `<p class="status-pill">No swap requests yet. Use the form above to find a peer.</p>`;
+    target.innerHTML = requests.length ? requests.map((request) => {
+      const requester = request.requesterId === user.id;
+      const status = request.status;
+      const actions = [
+        !requester && status === "requested" ? ["accepted", "Accept"] : null,
+        !requester && status === "requested" ? ["declined", "Decline"] : null,
+        requester && ["requested", "accepted"].includes(status) ? ["cancelled", "Cancel"] : null,
+        status === "accepted" ? ["completed", "Mark completed"] : null
+      ].filter(Boolean);
+      return `<article class="swap-request"><div class="swap-request__top"><div><h3>${escapeHTML(request.peerName)}</h3><p>You learn <strong>${escapeHTML(request.learnSkill)}</strong> · You teach <strong>${escapeHTML(request.teachSkill)}</strong></p></div><span class="status-pill">${escapeHTML(status)}</span></div>${request.message ? `<p>“${escapeHTML(request.message)}”</p>` : ""}<div class="swap-request__actions">${actions.map(([nextStatus, label]) => `<button class="btn btn-small swap-action" data-id="${escapeHTML(request.id)}" data-status="${nextStatus}">${label}</button>`).join("")}</div></article>`;
+    }).join("") : `<p class="status-pill">No exchange requests yet. Use the form above to find a peer.</p>`;
     target.querySelectorAll(".swap-action").forEach((button) => button.addEventListener("click", () => updateSwapStatus(button.dataset.id, button.dataset.status)));
   }
   renderSwapSummary();
 }
 
-function updateSwapStatus(id, status) {
-  const requests = getSwapRequests().map((request) => request.id === id ? { ...request, status } : request);
-  saveSwapRequests(requests); renderSwapRequests();
+async function updateSwapStatus(id, status) {
+  try {
+    await backend.updateSwapStatus(id, status);
+    const requests = getSwapRequests().map((request) => request.id === id ? { ...request, status } : request);
+    saveSwapRequests(requests);
+    renderSwapRequests();
+  } catch (error) {
+    reportBackendError(error, "update the exchange request");
+  }
 }
 
 function renderSwapSummary() {
@@ -3436,9 +3517,6 @@ function renderSwapSummary() {
   const requests = getSwapRequests();
   target.innerHTML = requests.length ? `<div class="stat-list">${requests.slice(0, 4).map((request) => `<div class="stat-item"><strong>${escapeHTML(request.peerName)}</strong> — ${escapeHTML(request.learnSkill)} for ${escapeHTML(request.teachSkill)} <span class="status-pill">${escapeHTML(request.status)}</span></div>`).join("")}</div><p class="detail-actions"><a class="btn btn-small" href="swap.html">Manage swaps</a></p>` : `<p>No exchanges yet. <a href="swap.html">Find a student to swap skills with.</a></p>`;
 }
-
-attachSwapPage();
-renderSwapSummary();
 
 function getJoinedCommunities() { return readStorage(STORAGE_KEYS.communities, []); }
 function saveJoinedCommunities(list) { writeStorage(STORAGE_KEYS.communities, list); }
@@ -3459,14 +3537,43 @@ function attachProfileImage() {
   const preview = document.getElementById("profile-photo-preview");
   if (!input || !preview) return;
   const user = getCurrentUser();
-  preview.src = user?.photo || "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='96' height='96'%3E%3Crect width='100%25' height='100%25' fill='%236d28d9'/%3E%3Ctext x='50%25' y='58%25' text-anchor='middle' font-family='Arial' font-size='34' fill='white'%3EYou%3C/text%3E%3C/svg%3E";
-  input.addEventListener("change", () => {
+  const fallback = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='96' height='96'%3E%3Crect width='100%25' height='100%25' fill='%23176b56'/%3E%3Ctext x='50%25' y='58%25' text-anchor='middle' font-family='Arial' font-size='34' fill='white'%3EYou%3C/text%3E%3C/svg%3E";
+  preview.src = user?.avatarUrl || fallback;
+  if (user?.avatarPath) {
+    backend.getAvatarUrl(user.avatarPath).then((url) => {
+      preview.src = url;
+      saveCurrentUser({ ...getCurrentUser(), avatarUrl: url });
+    }).catch((error) => reportBackendError(error, "load your profile photo"));
+  }
+  input.addEventListener("change", async () => {
     const file = input.files?.[0];
     if (!file) return;
-    if (file.size > 2 * 1024 * 1024) { alert("Please choose an image smaller than 2 MB."); input.value = ""; return; }
-    const reader = new FileReader();
-    reader.onload = () => { preview.src = String(reader.result); const current = getCurrentUser(); if (current) { const updated = { ...current, photo: String(reader.result) }; saveCurrentUser(updated); const users = getUsers(); const index = users.findIndex((entry) => entry.email === current.email); if (index >= 0) { users[index] = updated; saveUsers(users); } } };
-    reader.readAsDataURL(file);
+    if (!user?.id) {
+      showBackendStatus("Log in to update your profile photo.");
+      return;
+    }
+    if (!["image/png", "image/jpeg", "image/webp"].includes(file.type)) {
+      showBackendStatus("Choose a PNG, JPEG, or WebP image.");
+      input.value = "";
+      return;
+    }
+    if (file.size > 5 * 1024 * 1024) {
+      showBackendStatus("Choose an image smaller than 5 MB.");
+      input.value = "";
+      return;
+    }
+    input.disabled = true;
+    try {
+      const current = getCurrentUser();
+      const avatarPath = await backend.uploadAvatar(current.id, file, current.avatarPath);
+      const avatarUrl = await backend.getAvatarUrl(avatarPath);
+      preview.src = avatarUrl;
+      saveCurrentUser({ ...current, avatarPath, avatarUrl });
+    } catch (error) {
+      reportBackendError(error, "update your profile photo");
+    } finally {
+      input.disabled = false;
+    }
   });
 }
 
@@ -3486,7 +3593,7 @@ function attachDiscussionForm() {
   const select = document.getElementById("discussion-skill");
   select.innerHTML = communityData.map((community) => `<option value="${escapeHTML(community.skill)}">${escapeHTML(community.skill)} Community</option>`).join("");
   const renderPosts = () => { const box = document.getElementById("discussion-list"); const posts = getDiscussions(); box.innerHTML = posts.length ? posts.map((post) => `<article class="swap-request"><strong>${escapeHTML(post.author)}</strong><span class="status-pill">${escapeHTML(post.skill)}</span><p>${escapeHTML(post.text)}</p></article>`).join("") : `<p class="status-pill">No posts yet. Start the discussion with a focused question.</p>`; };
-  form.addEventListener("submit", (event) => { event.preventDefault(); const text = new FormData(form).get("post")?.toString().trim(); if (!text) return; const user = getCurrentUser(); const posts = getDiscussions(); posts.unshift({ author: user?.name || "SkillSwap learner", skill: select.value, text, createdAt: Date.now() }); saveDiscussions(posts.slice(0, 20)); form.reset(); document.getElementById("discussion-status").textContent = "Your post is live in the community."; renderPosts(); });
+  form.addEventListener("submit", (event) => { event.preventDefault(); const text = new FormData(form).get("post")?.toString().trim(); if (!text) return; const user = getCurrentUser(); const posts = getDiscussions(); posts.unshift({ author: user?.name || "Skillex learner", skill: select.value, text, createdAt: Date.now() }); saveDiscussions(posts.slice(0, 20)); form.reset(); document.getElementById("discussion-status").textContent = "Your post is live in the community."; renderPosts(); });
   renderPosts();
 }
 
@@ -3497,7 +3604,97 @@ function renderCommunityDashboard() {
   if (certificates) { const complete = skillCatalog.filter((skill) => getSkillProgressPercent(skill.id) === 100); certificates.innerHTML = complete.length ? `<p>${complete.length} course certificate${complete.length > 1 ? "s" : ""} earned.</p><div class="badge-list">${complete.map((skill) => `<div class="badge-item">${escapeHTML(skill.title)} — Certified</div>`).join("")}</div>` : `<p>Complete a course to unlock a certificate and begin your mentor path.</p><a class="btn btn-small" href="browse.html">Continue learning</a>`; }
 }
 
-attachProfileImage();
-renderCommunities();
-attachDiscussionForm();
-renderCommunityDashboard();
+function findSkillId(value) {
+  const normalized = String(value || "").trim().toLowerCase();
+  return skillCatalog.find((skill) =>
+    skill.id.toLowerCase() === normalized || skill.title.toLowerCase() === normalized
+  )?.id || "";
+}
+
+async function hydrateUserData(userId) {
+  const state = await backend.loadUserData(userId, skillCatalog);
+  writeStorage(STORAGE_KEYS.savedSkills, state.saved);
+  writeStorage(STORAGE_KEYS.progress, state.progress);
+  writeStorage(STORAGE_KEYS.savedLessons, state.savedLessons);
+  writeStorage(STORAGE_KEYS.swapRequests, state.requests);
+  writeStorage(STORAGE_KEYS.timeSpent, Object.fromEntries(
+    Object.entries(state.progress).map(([skillId, progress]) => [skillId, progress.timeSpentSeconds || 0])
+  ));
+  return state;
+}
+
+async function hydrateCourseCatalog() {
+  const remoteSkills = await backend.loadCourses();
+  const localSkills = new Map(skillCatalog.map((skill) => [skill.id, skill]));
+  const merged = remoteSkills.map((entry) => {
+    const skill = localSkills.get(entry.id);
+    if (!skill) {
+      throw new Error(`The local course data is missing for "${entry.title}" (${entry.id}).`);
+    }
+    const content = entry.course_content || {};
+    Object.assign(skill, content, {
+      id: entry.id,
+      title: entry.title,
+      category: entry.category,
+      description: entry.description
+    });
+    normalizeSkill(skill);
+    return skill;
+  });
+  skillCatalog.splice(0, skillCatalog.length, ...merged);
+}
+
+function initializePage() {
+  updateAuthLinks();
+  if (!ensureProtectedAccess()) return;
+  injectQuickNavigation();
+  attachBrowseInteractions();
+  renderDashboard();
+  renderSavedSkillsPage();
+  renderSkillDetailPage();
+  attachAuthForms();
+  attachContactForm();
+  attachSwapPage();
+  renderSwapSummary();
+  attachProfileImage();
+  renderCommunities();
+  attachDiscussionForm();
+  renderCommunityDashboard();
+}
+
+async function initializeApp() {
+  const legacyUsers = readStorage(STORAGE_KEYS.users, null);
+  if (Array.isArray(legacyUsers)) {
+    saveUsers(legacyUsers
+      .filter((user) => user && typeof user === "object")
+      .map(({ password, ...user }) => user));
+  }
+  try {
+    const session = await backend.getSession();
+    if (!session) {
+      saveCurrentUser(null);
+    } else {
+      const profile = await backend.loadProfile(session.user, skillCatalog);
+      saveCurrentUser(profile);
+    }
+  } catch (error) {
+    reportBackendError(error, "connect to Skillex");
+    saveCurrentUser(null);
+  }
+
+  if (window.location.hash && /^(?:#access_token=|#error=|#error_description=)/.test(window.location.hash)) {
+    history.replaceState(null, "", `${window.location.pathname}${window.location.search}`);
+  }
+
+  if (!ensureProtectedAccess()) return;
+
+  try {
+    await hydrateCourseCatalog();
+    if (getCurrentUser()?.id) await hydrateUserData(getCurrentUser().id);
+  } catch (error) {
+    reportBackendError(error, "load Skillex learning data");
+  }
+  initializePage();
+}
+
+initializeApp();

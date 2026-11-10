@@ -1,5 +1,5 @@
 (function (root) {
-  function createLessonRenderer({ getSkillById, getSkillLessonEntries, getSkillCurriculumSections, getSkillProgress, saveSkillProgress, isLessonBookmarked, toggleLessonBookmark, addTimeSpent, renderSkillDetailPage, defaultCodeFor }) {
+  function createLessonRenderer({ getSkillById, getSkillLessonEntries, getSkillCurriculumSections, getSkillProgress, saveSkillProgress, isLessonBookmarked, toggleLessonBookmark, addTimeSpent, renderSkillDetailPage, escapeHTML, defaultCodeFor }) {
     let lessonViewStart = null;
 
     function renderLessonContent(skill, lessonTitle) {
@@ -14,55 +14,55 @@
 
       lessonView.innerHTML = `
         <article class="lesson-view-card">
-          <h3>${lessonEntry.title}</h3>
-          <p class="lesson-desc">${lessonEntry.description || ''}</p>
+          <h3>${escapeHTML(lessonEntry.title)}</h3>
+          <p class="lesson-desc">${escapeHTML(lessonEntry.description || '')}</p>
           <div class="lesson-actions">
             <button class="btn" id="mark-complete-btn">Mark as completed</button>
             <button class="btn btn-secondary" id="bookmark-lesson-btn">${bookmarked ? 'Bookmarked' : 'Save lesson'}</button>
           </div>
           <section class="lesson-structure">
             <h4>Introduction</h4>
-            <p>${lessonEntry.introduction || lessonEntry.description || ''}</p>
+            <p>${escapeHTML(lessonEntry.introduction || lessonEntry.description || '')}</p>
             <h4>Why this topic matters</h4>
-            <p>${lessonEntry.why || ''}</p>
+            <p>${escapeHTML(lessonEntry.why || '')}</p>
             <h4>Simple explanation</h4>
-            <p>${lessonEntry.simpleExplanation || lessonEntry.explanation || ''}</p>
+            <p>${escapeHTML(lessonEntry.simpleExplanation || lessonEntry.explanation || '')}</p>
             <h4>Real-life analogy</h4>
-            <p>${lessonEntry.analogy || ''}</p>
+            <p>${escapeHTML(lessonEntry.analogy || '')}</p>
             <h4>Visual explanation</h4>
-            <pre class="visual-code">${lessonEntry.visual || ''}</pre>
+            <pre class="visual-code">${escapeHTML(lessonEntry.visual || '')}</pre>
             <h4>Lesson content</h4>
-            <p>${lessonEntry.explanation || ''}</p>
+            <p>${escapeHTML(lessonEntry.explanation || '')}</p>
             <h4>Examples</h4>
-            <p>${lessonEntry.examples || ''}</p>
+            <p>${escapeHTML(lessonEntry.examples || '')}</p>
             <h4>Step-by-step breakdown</h4>
-            <ol>${(lessonEntry.steps || []).map((step) => `<li>${step}</li>`).join('')}</ol>
+            <ol>${(lessonEntry.steps || []).map((step) => `<li>${escapeHTML(step)}</li>`).join('')}</ol>
             ${ (lessonEntry.code || lessonEntry.interactive) ? `
               <h4>Interactive demonstration</h4>
-              ${lessonEntry.code ? `<textarea id="code-editor" class="code-editor" rows="8">${lessonEntry.code || defaultCodeFor(skill.id, lessonEntry.title)}</textarea>
+            ${lessonEntry.code ? `<textarea id="code-editor" class="code-editor" rows="8">${escapeHTML(lessonEntry.code || defaultCodeFor(skill.id, lessonEntry.title))}</textarea>
               <div class="code-controls"><button class="btn btn-sm" id="run-code">Run</button></div>
-              <div class="code-preview"><iframe id="preview-frame"></iframe></div>` : `<div class="interactive">${lessonEntry.interactive || ''}</div>` }
+            <div class="code-preview"><iframe id="preview-frame"></iframe></div>` : `<div class="interactive">${escapeHTML(lessonEntry.interactive || '')}</div>` }
             ` : '' }
             <h4>Common mistakes</h4>
-            <ul>${(lessonEntry.commonMistakes || []).map((m) => `<li>${m}</li>`).join('')}</ul>
+            <ul>${(lessonEntry.commonMistakes || []).map((m) => `<li>${escapeHTML(m)}</li>`).join('')}</ul>
             <h4>Easy ways to remember</h4>
-            <p>${lessonEntry.memoryAid || ''}</p>
+            <p>${escapeHTML(lessonEntry.memoryAid || '')}</p>
             <h4>Practice exercises</h4>
-            <ol>${(lessonEntry.exercises || []).map((e) => `<li>${e}</li>`).join('')}</ol>
+            <ol>${(lessonEntry.exercises || []).map((e) => `<li>${escapeHTML(e)}</li>`).join('')}</ol>
             <h4>Quiz</h4>
             <div class="quiz-block">
-              <p><strong>Q:</strong> ${lessonEntry.quiz?.q || 'What is the main idea of this lesson?'}</p>
-              ${lessonEntry.quiz ? lessonEntry.quiz.options.map((opt, i) => `<button class="quiz-opt btn btn-sm" data-answer="${i}">${opt}</button>`).join('') : '<p>No quiz for this lesson.</p>'}
+            <p><strong>Q:</strong> ${escapeHTML(lessonEntry.quiz?.q || 'What is the main idea of this lesson?')}</p>
+            ${lessonEntry.quiz ? lessonEntry.quiz.options.map((opt, i) => `<button class="quiz-opt btn btn-sm" data-answer="${i}">${escapeHTML(opt)}</button>`).join('') : '<p>No quiz for this lesson.</p>'}
               <p class="quiz-feedback" aria-live="polite"></p>
             </div>
             <h4>Mini project</h4>
-            <p>${lessonEntry.miniProject || ''}</p>
+            <p>${escapeHTML(lessonEntry.miniProject || '')}</p>
             <h4>Summary notes</h4>
-            <p>${lessonEntry.summary || ''}</p>
+            <p>${escapeHTML(lessonEntry.summary || '')}</p>
             <h4>Revision points</h4>
-            <p>${lessonEntry.revision || ''}</p>
+            <p>${escapeHTML(lessonEntry.revision || '')}</p>
             <h4>Next lesson recommendation</h4>
-            <p><a href="#" class="next-lesson-link">${lessonEntry.nextLesson || ''}</a></p>
+            <p><a href="#" class="next-lesson-link">${escapeHTML(lessonEntry.nextLesson || '')}</a></p>
           </section>
         </article>
       `;

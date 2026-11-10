@@ -473,7 +473,7 @@ export const skillCatalog = [
         analogy: "Different boxes are used for different items — one for books, one for tools, one for fruit.",
         visual: "const title = 'Hello';\nconst age = 25;\nconst isReady = true;",
         explanation: "JavaScript has primitive types such as string, number, boolean, undefined, and null.",
-        examples: "console.log(typeof 'SkillSwap');",
+        examples: "console.log(typeof 'Skillex');",
         interactive: "Write a short script that prints different values and their types.",
         commonMistakes: ["Confusing strings and numbers", "Forgetting that true/false are booleans"],
         memoryAid: "Use typeof to inspect data types while you learn.",
@@ -1300,7 +1300,7 @@ export const skillCatalog = [
         quiz: { q: "What makes a toolkit truly useful?", options: ["Lots of colors", "Clear organization and instructions", "Only one long prompt", "No examples"], answer: 1 },
         miniProject: "Complete your Prompt Engineering Toolkit.",
         summary: "Congratulations! You are now a master of AI communication.",
-        revision: "Share your toolkit with the SkillSwap community.",
+        revision: "Share your toolkit with the Skillex community.",
         nextLesson: "Course Completed"
       }
     ],

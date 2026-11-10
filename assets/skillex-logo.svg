@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512" fill="none">
+  <defs>
+    <linearGradient id="swap-flow" x1="120" y1="126" x2="397" y2="393" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#B9F2D8"/>
+      <stop offset=".52" stop-color="#F7F7F2"/>
+      <stop offset="1" stop-color="#83D9B6"/>
+    </linearGradient>
+    <linearGradient id="tile-shade" x1="64" y1="52" x2="448" y2="460" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#217C64"/>
+      <stop offset="1" stop-color="#0D4C40"/>
+    </linearGradient>
+  </defs>
+  <rect width="512" height="512" fill="#0B342E"/>
+  <rect x="14" y="14" width="484" height="484" rx="112" fill="url(#tile-shade)"/>
+  <rect x="15" y="15" width="482" height="482" rx="111" stroke="#FFFFFF" stroke-opacity=".1" stroke-width="2"/>
+  <path d="M136 253V211a84 84 0 0 1 84-84h76a76 76 0 0 1 76 76v42" stroke="url(#swap-flow)" stroke-width="27" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="m337 228 35 38 35-38" stroke="#B9F2D8" stroke-width="26" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M376 259v42a84 84 0 0 1-84 84h-76a76 76 0 0 1-76-76v-42" stroke="url(#swap-flow)" stroke-width="27" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="m101 284 35-38 35 38" stroke="#F7F7F2" stroke-width="26" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="m256 210 12 30 30 12-30 12-12 30-12-30-30-12 30-12 12-30Z" fill="#E7B94F"/>
+  <circle cx="256" cy="252" r="5" fill="#FFF6D6"/>
+</svg>

@@ -3,16 +3,43 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>SkillSwap | Saved Skills</title>
+    <title>Skillex | Saved Skills</title>
+    <meta name="description" content="Review and continue learning the skills you saved on Skillex." />
+    <meta name="author" content="Aliyu Jazuli" />
+    <meta name="creator" content="Aliyu Jazuli" />
+    <meta name="publisher" content="HYDEV" />
+    <meta name="theme-color" content="#176b56" />
+    <link rel="icon" href="assets/favicon.ico" sizes="any" />
+    <link rel="icon" href="assets/skillex-logo.svg" type="image/svg+xml" />
+    <link rel="apple-touch-icon" href="assets/skillex-icon-180.png" />
+    <link rel="manifest" href="site.webmanifest" />
+    <link rel="canonical" href="https://skillex-hydev.netlify.app/saved-skills.html" />
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="Skillex" />
+    <meta property="og:title" content="Skillex | Saved Skills" />
+    <meta property="og:description" content="Skillex is a platform where people exchange skills, share knowledge, connect with others, and grow together." />
+    <meta property="og:image" content="https://skillex-hydev.netlify.app/assets/skillex-social.png" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:image:alt" content="Skillex logo: Where people exchange skills, share knowledge, and grow together." />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="Skillex | Saved Skills" />
+    <meta name="twitter:description" content="Skillex is a platform where people exchange skills, share knowledge, connect with others, and grow together." />
+    <meta name="twitter:image" content="https://skillex-hydev.netlify.app/assets/skillex-social.png" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
     <link rel="stylesheet" href="css/style.css" />
+      <meta property="og:image:type" content="image/png" />
+      <meta property="og:url" content="https://skillex-hydev.netlify.app/saved-skills.html" />
+      <meta name="twitter:image:alt" content="Skillex logo: Where people exchange skills, share knowledge, and grow together." />
+      <meta name="application-name" content="Skillex" />
+      <meta name="robots" content="noindex, nofollow" />
   </head>
   <body>
     <header class="site-header">
       <nav class="navbar container">
-        <a href="index.html" class="logo">SkillSwap</a>
+        <a href="index.html" class="logo">Skillex</a>
         <div class="nav-actions">
           <button class="theme-toggle" type="button" aria-label="Toggle color theme">
             <span class="theme-toggle__icon">☀️</span>
@@ -33,10 +60,22 @@
 
     <footer class="site-footer">
       <div class="container footer-content">
-        <p>© 2026 SkillSwap. All rights reserved.</p>
+        <div class="footer-brand">
+          <p class="footer-built-by">BUILT BY</p>
+          <a class="footer-hydev" href="https://aliyujazuli.netlify.app" target="_blank" rel="noopener noreferrer" aria-label="HYDEV ecosystem by Aliyu Jazuli">
+            <img src="assets/hydev-logo-tile.png" alt="HYDEV" width="116" height="90" />
+          </a>
+          <p class="footer-copyright">&copy; 2026 Skillex. All rights reserved.</p>
+          <p class="footer-attribution"><a href="https://aliyujazuli.netlify.app/" target="_blank" rel="noopener noreferrer">Created by Aliyu Jazuli</a></p>
+        </div>
       </div>
     </footer>
 
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="js/supabase-config.js"></script>
+    <script src="js/backend.js"></script>
+    <script src="js/modules/learning-data.js"></script>
+    <script src="js/modules/learning-ui.js"></script>
     <script src="js/script.js"></script>
   </body>
 </html>

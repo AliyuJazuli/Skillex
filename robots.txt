@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://skillex-hydev.netlify.app/sitemap.xml
