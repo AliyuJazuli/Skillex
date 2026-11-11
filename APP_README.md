@@ -16,6 +16,8 @@ Skillex helps people teach what they know, learn from others, and make progress 
 
 An account is required for profiles, saved items, cross-device progress, and peer exchanges. Public course information remains available to visitors.
 
+Page-to-page navigation keeps the browser address at the Skillex homepage while loading the selected page in place. Direct page links remain available for sharing and indexing.
+
 ## Local setup
 
 The app is static; serve the repository root over HTTP using VS Code Live Server or another static server. Authentication and synced features require the configured Skillex Supabase project to be available.
@@ -40,5 +42,6 @@ The browser client configuration lives in `js/supabase-config.js`. Its URL and p
 5. Test profile edits, skill goals, avatar upload, saved content, learning progress, and exchange-request status changes with controlled accounts.
 6. Run `node --test tests/*.test.cjs` and the syntax checks in the root [README](README.md).
 7. Deploy only after the backend checks pass, then verify the hosted origin, page metadata, icons, and responsive layouts.
+8. Verify the site in Google Search Console, submit `https://skillex-hydev.netlify.app/sitemap.xml`, and request indexing for the homepage.
 
 Search engines and social platforms decide how and when indexed pages appear; a correct favicon and structured metadata improve readiness but cannot guarantee a particular search-result treatment.

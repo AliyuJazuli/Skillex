@@ -161,6 +161,26 @@ test("site pages consistently load the backend and use the Skillex origin", () =
     assert.match(html, /https:\/\/cdn\.jsdelivr\.net\/npm\/@supabase\/supabase-js@2/ , page);
     assert.match(html, /js\/supabase-config\.js/ , page);
     assert.match(html, /js\/backend\.js/ , page);
+    assert.match(html, /js\/theme-init\.js/ , page);
+    assert.match(html, /js\/navigation\.js/ , page);
     assert.match(html, /rel="canonical" href="https:\/\/skillex-hydev\.netlify\.app/ , page);
   }
+
+  const homepage = fs.readFileSync(path.join(root, "index.html"), "utf8");
+  assert.match(homepage, /name="google-site-verification" content="KygdRzP9SjeJACyAkETodHC9Zl6L5okWZuWyTA2SWU0"/);
+  assert.doesNotMatch(homepage, /1\.2k\+|4\.2\/5|student rating|100\+ student-led skills/i);
+
+  const contact = fs.readFileSync(path.join(root, "contact.html"), "utf8");
+  assert.match(contact, /aliyujaxuli@gmail\.com/);
+
+  const app = fs.readFileSync(path.join(root, "js", "script.js"), "utf8");
+  assert.match(app, /function showToast\(/);
+  assert.match(app, /savePendingToast\("Welcome back\. You are now signed in\."/);
+
+  const navigation = fs.readFileSync(path.join(root, "js", "navigation.js"), "utf8");
+  assert.match(navigation, /history\.pushState\(\{ skillexRoute: routePath \}, "", window\.location\.origin\)/);
+  assert.match(navigation, /document\.addEventListener\("click"/);
+
+  const themeInit = fs.readFileSync(path.join(root, "js", "theme-init.js"), "utf8");
+  assert.match(themeInit, /document\.documentElement\.classList\.toggle\("dark", useDarkTheme\)/);
 });

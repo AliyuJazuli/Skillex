@@ -27,6 +27,21 @@ body.dark {
   --accent: #f0ca6c;
 }
 
+html.dark {
+  color-scheme: dark;
+  --primary: #79c4a4;
+  --primary-dark: #10513f;
+  --primary-soft: #1c392f;
+  --bg: #111b17;
+  --surface: #1a2822;
+  --surface-2: #21332b;
+  --text: #eef4ef;
+  --muted: #bdcbc2;
+  --border: #34483e;
+  --shadow: 0 18px 48px rgba(0, 0, 0, 0.22);
+  --accent: #f0ca6c;
+}
+
 * {
   box-sizing: border-box;
   margin: 0;
@@ -45,6 +60,11 @@ body {
   line-height: 1.7;
   transition: background 0.25s ease, color 0.25s ease;
   overflow-x: hidden;
+}
+
+html.dark body {
+  background: var(--bg);
+  color: var(--text);
 }
 
 a {
@@ -71,7 +91,8 @@ img {
   border-bottom: 1px solid var(--border);
 }
 
-body.dark .site-header {
+body.dark .site-header,
+html.dark .site-header {
   background: rgba(7, 17, 31, 0.8);
 }
 
@@ -1983,6 +2004,21 @@ select:focus,
   pointer-events: none;
 }
 
+.quick-nav {
+  animation: quick-nav-arrive 540ms cubic-bezier(0.2, 0.75, 0.25, 1) both;
+}
+
+@keyframes quick-nav-arrive {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
 .quick-nav > .container {
   width: min(100% - 1.5rem, 1200px);
   max-width: 100%;
@@ -2149,6 +2185,38 @@ select {
   color: var(--primary);
 }
 
+.app-toast {
+  position: fixed;
+  z-index: 3000;
+  top: max(1rem, env(safe-area-inset-top));
+  right: max(1rem, env(safe-area-inset-right));
+  width: min(28rem, calc(100vw - 2rem));
+  padding: 1rem 1.15rem;
+  border: 1px solid var(--border);
+  border-left: 4px solid #3278b5;
+  border-radius: 1rem;
+  background: var(--surface);
+  color: var(--text);
+  box-shadow: 0 16px 40px rgba(24, 43, 37, 0.2);
+  opacity: 0;
+  transform: translateY(-12px);
+  transition: opacity 240ms ease, transform 240ms ease;
+  pointer-events: none;
+}
+
+.app-toast.is-visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.app-toast--success {
+  border-left-color: #17815f;
+}
+
+.app-toast--error {
+  border-left-color: #c23b3b;
+}
+
 @media (max-width: 520px) {
   .hero-actions > .btn {
     width: 100%;
@@ -2213,6 +2281,11 @@ select:focus-visible {
   .bottom-nav,
   .page-nav {
     top: 68px;
+  }
+
+  .app-toast {
+    right: 0.75rem;
+    width: calc(100vw - 1.5rem);
   }
 
   .hero {

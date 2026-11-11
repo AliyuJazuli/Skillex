@@ -1,7 +1,7 @@
 window.SkillexBackend = (() => {
   const config = window.SKILLEX_SUPABASE_CONFIG;
   const client = config && window.supabase?.createClient
-    ? window.supabase.createClient(config.url, config.publishableKey)
+    ? (window.__SKILLEX_SUPABASE_CLIENT ||= window.supabase.createClient(config.url, config.publishableKey))
     : null;
 
   function getClient() {

@@ -1,9 +1,12 @@
+(function () {
 const navToggle = document.querySelector(".nav-toggle");
 const navLinks = document.querySelector(".nav-links");
 const themeToggle = document.querySelector(".theme-toggle");
 const body = document.body;
 const backend = window.SkillexBackend;
 let lessonViewStart = null;
+let toastDismissTimer;
+let toastRemovalTimer;
 const STORAGE_KEYS = {
   theme: "skillswap-theme",
   users: "skillswap-users",
@@ -18,6 +21,14 @@ const STORAGE_KEYS = {
   discussions: "skillswap-discussions",
 };
 
+function navigateTo(url, historyMode = "push") {
+  if (typeof window.SkillexNavigate === "function") {
+    window.SkillexNavigate(url, historyMode);
+  } else {
+    window.location.href = url;
+  }
+}
+
 function showBackendStatus(message) {
   let status = document.querySelector("[data-backend-status]");
   if (!status) {
@@ -29,6 +40,46 @@ function showBackendStatus(message) {
     document.querySelector("main")?.prepend(status);
   }
   status.textContent = message;
+}
+
+function showToast(message, type = "info", duration = 5200) {
+  let toast = document.querySelector(".app-toast");
+  if (!toast) {
+    toast = document.createElement("div");
+    toast.className = "app-toast";
+    toast.setAttribute("role", "status");
+    toast.setAttribute("aria-live", "polite");
+    toast.setAttribute("aria-atomic", "true");
+    document.body.append(toast);
+  }
+
+  window.clearTimeout(toastDismissTimer);
+  window.clearTimeout(toastRemovalTimer);
+  toast.className = `app-toast app-toast--${type}`;
+  toast.textContent = message;
+  requestAnimationFrame(() => toast.classList.add("is-visible"));
+  toastDismissTimer = window.setTimeout(() => {
+    toast.classList.remove("is-visible");
+    toastRemovalTimer = window.setTimeout(() => toast.remove(), 320);
+  }, duration);
+}
+
+window.SkillexShowToast = showToast;
+
+function showPendingToast() {
+  try {
+    const pendingToast = sessionStorage.getItem("skillex-pending-toast");
+    if (!pendingToast) return;
+    sessionStorage.removeItem("skillex-pending-toast");
+    const { message, type } = JSON.parse(pendingToast);
+    if (message) showToast(message, type);
+  } catch (error) {
+    console.error("Could not restore Skillex notification:", error);
+  }
+}
+
+function savePendingToast(message, type) {
+  sessionStorage.setItem("skillex-pending-toast", JSON.stringify({ message, type }));
 }
 
 function reportBackendError(error, operation) {
@@ -2667,48 +2718,13 @@ if (navToggle && navLinks) {
 }
 
 function ensureProtectedAccess() {
-  const page = window.location.pathname.split("/").pop();
+  const page = window.SKILLEX_ROUTE_URL?.pathname.split("/").pop() || window.location.pathname.split("/").pop();
   const protectedPages = ["dashboard.html", "profile.html", "saved-skills.html"];
   if (protectedPages.includes(page) && !getCurrentUser()) {
-    window.location.href = "login.html";
+    navigateTo("login.html", "replace");
     return false;
   }
   return true;
-}
-
-function injectQuickNavigation() {
-  const existingNav = document.querySelector(".quick-nav");
-  if (existingNav) return;
-
-  const quickNav = document.createElement("div");
-  quickNav.className = "quick-nav";
-  quickNav.innerHTML = `
-    <div class="container">
-      <nav class="quick-nav__links" aria-label="Main navigation">
-        <a class="quick-nav__link" href="index.html"><svg aria-hidden="true" viewBox="0 0 24 24"><path d="m3 10 9-7 9 7v10a1 1 0 0 1-1 1h-5v-7H9v7H4a1 1 0 0 1-1-1z"/></svg><span>Home</span></a>
-        <a class="quick-nav__link" href="browse.html"><svg aria-hidden="true" viewBox="0 0 24 24"><circle cx="10.8" cy="10.8" r="6.8"/><path d="m16 16 5 5"/></svg><span>Browse</span></a>
-        <a class="quick-nav__link" href="dashboard.html"><svg aria-hidden="true" viewBox="0 0 24 24"><rect x="3" y="3" width="8" height="8" rx="1.5"/><rect x="13" y="3" width="8" height="5" rx="1.5"/><rect x="13" y="10" width="8" height="11" rx="1.5"/><rect x="3" y="13" width="8" height="8" rx="1.5"/></svg><span>Dashboard</span></a>
-        <a class="quick-nav__link" href="swap.html"><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M4 7h15l-3-3M20 17H5l3 3"/></svg><span>Swap</span></a>
-        <a class="quick-nav__link" href="communities.html"><svg aria-hidden="true" viewBox="0 0 24 24"><circle cx="9" cy="8" r="3"/><path d="M3 20v-1a6 6 0 0 1 12 0v1zm13-9a3 3 0 1 0-1-5.8M18 14a5 5 0 0 1 3 4.6v1"/></svg><span>Community</span></a>
-        <a class="quick-nav__link" href="saved-skills.html"><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M6 4a1 1 0 0 1 1-1h10a1 1 0 0 1 1 1v17l-6-4-6 4z"/></svg><span>Saved</span></a>
-        <a class="quick-nav__link" href="about.html"><svg aria-hidden="true" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 11v5m0-9h.01"/></svg><span>About</span></a>
-        <a class="quick-nav__link" href="contact.html"><svg aria-hidden="true" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="m4 7 8 6 8-6"/></svg><span>Contact</span></a>
-      </nav>
-    </div>
-  `;
-
-  const siteHeader = document.querySelector(".site-header");
-  if (siteHeader) {
-    siteHeader.insertAdjacentElement("afterend", quickNav);
-  }
-
-  const currentPage = window.location.pathname.split("/").pop() || "index.html";
-  document.querySelectorAll(".quick-nav__link").forEach((link) => {
-    const targetPage = link.getAttribute("href")?.split("/").pop() || "index.html";
-    const active = currentPage === targetPage;
-    link.classList.toggle("active", active);
-    if (active) link.setAttribute("aria-current", "page");
-  });
 }
 
 function attachBrowseInteractions() {
@@ -2748,14 +2764,14 @@ function attachBrowseInteractions() {
       learnButton?.addEventListener("click", () => {
         const firstLesson = skill?.lessons?.[0] || skill?.lessonDetails?.[0]?.title || "";
         addRecentlyViewed(skillId);
-        window.location.href = `skill.html?skill=${skillId}${firstLesson ? `&lesson=${encodeURIComponent(firstLesson)}` : ""}`;
+        navigateTo(`skill.html?skill=${skillId}${firstLesson ? `&lesson=${encodeURIComponent(firstLesson)}` : ""}`);
       });
 
       card.addEventListener("click", (event) => {
         if (event.target.closest("button")) return;
         const firstLesson = skill?.lessons?.[0] || skill?.lessonDetails?.[0]?.title || "";
         addRecentlyViewed(skillId);
-        window.location.href = `skill.html?skill=${skillId}${firstLesson ? `&lesson=${encodeURIComponent(firstLesson)}` : ""}`;
+        navigateTo(`skill.html?skill=${skillId}${firstLesson ? `&lesson=${encodeURIComponent(firstLesson)}` : ""}`);
       });
 
       saveButton?.addEventListener("click", (event) => {
@@ -2763,7 +2779,7 @@ function attachBrowseInteractions() {
         const currentUser = getCurrentUser();
 
         if (!currentUser) {
-          window.location.href = "login.html";
+          navigateTo("login.html");
           return;
         }
 
@@ -3013,7 +3029,7 @@ function renderSkillDetailPage() {
   const notesBox = document.getElementById("notes-box");
   const completeButton = document.getElementById("complete-lesson");
   const continueButton = document.getElementById("continue-learning");
-  const params = new URLSearchParams(window.location.search);
+  const params = new URLSearchParams(window.SKILLEX_ROUTE_URL?.search || window.location.search);
   const skillId = params.get("skill") || "html-css";
   const skill = getSkillById(skillId);
 
@@ -3083,7 +3099,7 @@ function renderSkillDetailPage() {
     document.getElementById("save-skill-btn")?.addEventListener("click", () => {
       const currentUser = getCurrentUser();
       if (!currentUser) {
-        window.location.href = "login.html";
+        navigateTo("login.html");
         return;
       }
       const saved = getSavedSkills();
@@ -3206,10 +3222,12 @@ async function handleLoginSubmit(event) {
     const profile = await backend.loadProfile(result.user, skillCatalog);
     saveCurrentUser(profile);
     await hydrateUserData(profile.id);
-    if (status) status.textContent = "Login successful. Redirecting...";
-    window.location.href = "dashboard.html";
+    savePendingToast("Welcome back. You are now signed in.", "success");
+    navigateTo("dashboard.html");
   } catch (error) {
-    if (status) status.textContent = error.message || "Unable to log in. Please check your details and try again.";
+    const message = error?.message || "Unable to log in. Please check your details and try again.";
+    if (status) status.textContent = message;
+    showToast(message, "error");
   } finally {
     if (submit) submit.disabled = false;
   }
@@ -3246,18 +3264,22 @@ async function handleSignupSubmit(event) {
       const profile = await backend.loadProfile(result.user, skillCatalog);
       saveCurrentUser(profile);
       await hydrateUserData(profile.id);
-      if (status) status.textContent = "Account created successfully. Redirecting...";
-      window.location.href = "dashboard.html";
+      savePendingToast("Your account is ready. Welcome to Skillex.", "success");
+      navigateTo("dashboard.html");
       return;
     }
-    if (status) status.textContent = "Account created. Check your email for a confirmation link before logging in.";
+    const message = "Account created. Check your email for a confirmation link before logging in.";
+    if (status) status.textContent = message;
+    showToast(message, "success", 7000);
   } catch (error) {
     const errorDetail = `${error?.code || ""} ${error?.message || ""}`.toLowerCase();
+    const message = errorDetail.includes("rate limit") || errorDetail.includes("over_email_send_rate_limit")
+      ? "The sign-up email service has reached its sending limit. Please wait before trying again. Configure a custom SMTP sender in Supabase Auth to avoid this recurring."
+      : error?.message || "Unable to create your account. Please try again.";
     if (status) {
-      status.textContent = errorDetail.includes("rate limit") || errorDetail.includes("over_email_send_rate_limit")
-        ? "The sign-up email service has reached its sending limit. Please wait before trying again. Configure a custom SMTP sender in Supabase Auth to avoid this recurring."
-        : error?.message || "Unable to create your account. Please try again.";
+      status.textContent = message;
     }
+    showToast(message, "error", 7000);
   } finally {
     if (submit) submit.disabled = false;
   }
@@ -3313,7 +3335,7 @@ function attachAuthForms() {
     try {
       await backend.signOut();
       saveCurrentUser(null);
-      window.location.href = "login.html";
+      navigateTo("login.html");
     } catch (error) {
       reportBackendError(error, "log out");
       logoutButton.disabled = false;
@@ -3332,8 +3354,7 @@ function attachAuthForms() {
   }
 }
 
-// TODO: replace with your real email address
-const CONTACT_EMAIL = "you@yourdomain.com";
+const CONTACT_EMAIL = "aliyujaxuli@gmail.com";
 
 function attachContactForm() {
   const contactForm = document.querySelector(".contact-form");
@@ -3353,6 +3374,7 @@ function attachContactForm() {
         if (formStatus) {
           formStatus.textContent = "Please fill in every field before sending your message.";
         }
+        showToast("Please fill in every field before sending your message.", "error");
         return;
       }
 
@@ -3360,17 +3382,25 @@ function attachContactForm() {
         if (formStatus) {
           formStatus.textContent = "Please enter a valid email address.";
         }
+        showToast("Please enter a valid email address.", "error");
         return;
       }
 
       // Open the visitor's email app with everything pre-filled, addressed to you.
       const mailBody = `${message}\n\n— ${name} (${email})`;
       const mailtoUrl = `mailto:${CONTACT_EMAIL}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(mailBody)}`;
-      window.location.href = mailtoUrl;
+      const emailLink = document.createElement("a");
+      emailLink.href = mailtoUrl;
+      emailLink.style.display = "none";
+      document.body.append(emailLink);
+      emailLink.click();
+      emailLink.remove();
 
+      const statusMessage = "Your email app should open with the message ready to send.";
       if (formStatus) {
-        formStatus.textContent = "Opening your email app to send this message...";
+        formStatus.textContent = statusMessage;
       }
+      showToast(statusMessage, "success");
 
       contactForm.reset();
     });
@@ -3652,7 +3682,6 @@ async function hydrateCourseCatalog() {
 function initializePage() {
   updateAuthLinks();
   if (!ensureProtectedAccess()) return;
-  injectQuickNavigation();
   attachBrowseInteractions();
   renderDashboard();
   renderSavedSkillsPage();
@@ -3668,6 +3697,8 @@ function initializePage() {
 }
 
 async function initializeApp() {
+  showPendingToast();
+
   const legacyUsers = readStorage(STORAGE_KEYS.users, null);
   if (Array.isArray(legacyUsers)) {
     saveUsers(legacyUsers
@@ -3687,8 +3718,9 @@ async function initializeApp() {
     saveCurrentUser(null);
   }
 
-  if (window.location.hash && /^(?:#access_token=|#error=|#error_description=)/.test(window.location.hash)) {
-    history.replaceState(null, "", `${window.location.pathname}${window.location.search}`);
+  const routeHash = window.SKILLEX_ROUTE_URL?.hash || window.location.hash;
+  if (routeHash && /^(?:#access_token=|#error=|#error_description=)/.test(routeHash)) {
+    history.replaceState({ skillexRoute: `${window.SKILLEX_ROUTE_URL.pathname}${window.SKILLEX_ROUTE_URL.search}` }, "", window.location.origin);
   }
 
   if (!ensureProtectedAccess()) return;
@@ -3703,3 +3735,4 @@ async function initializeApp() {
 }
 
 initializeApp();
+})();
