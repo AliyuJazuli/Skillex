@@ -101,7 +101,11 @@
       const response = await fetch(routePath, { headers: { "X-Skillex-Navigation": "1" } });
       if (!response.ok) throw new Error(`Page request failed (${response.status}).`);
       const html = await response.text();
-      sessionStorage.setItem(routeKey, routePath);
+      try {
+        sessionStorage.setItem(routeKey, routePath);
+      } catch (error) {
+        console.error("Could not save the current Skillex page:", error);
+      }
       if (historyMode === "push") {
         history.pushState({ skillexRoute: routePath }, "", window.location.origin);
       } else if (historyMode === "replace") {
