@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Skillex | Settings</title>
+    <meta name="description" content="Manage your Skillex appearance and personal learning-data backup." />
+    <meta name="theme-color" content="#176b56" />
+    <link rel="icon" href="assets/favicon.ico" sizes="any" />
+    <link rel="icon" href="assets/skillex-logo.svg" type="image/svg+xml" />
+    <link rel="apple-touch-icon" href="assets/skillex-icon-180.png" />
+    <link rel="manifest" href="site.webmanifest" />
+    <link rel="canonical" href="https://skillex-hydev.netlify.app/settings.html" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+    <script src="js/theme-init.js"></script>
+    <link rel="stylesheet" href="css/style.css" />
+    <meta name="robots" content="noindex, nofollow" />
+  </head>
+  <body>
+    <header class="site-header">
+      <nav class="navbar container">
+        <a href="index.html" class="logo">Skillex</a>
+        <div class="nav-actions">
+          <button class="theme-toggle" type="button" aria-label="Toggle color theme"><span class="theme-toggle__icon">☀️</span></button>
+          <a href="dashboard.html" class="btn btn-sm" data-auth="dashboard">Dashboard</a>
+        </div>
+      </nav>
+    </header>
+
+    <main class="container page-shell">
+      <section class="page-hero">
+        <p class="eyebrow">Your preferences</p>
+        <h1>Settings</h1>
+        <p>Control the app appearance and keep a portable backup of your learning progress.</p>
+      </section>
+
+      <form class="settings-grid" id="settings-form">
+        <section class="settings-card">
+          <p class="eyebrow">Appearance</p>
+          <h2>Theme</h2>
+          <label for="theme-preference">Choose how Skillex looks</label>
+          <select id="theme-preference" name="theme">
+            <option value="system">Follow system</option>
+            <option value="light">Light</option>
+            <option value="dark">Dark</option>
+          </select>
+          <p class="muted">Follow system updates automatically when your device appearance changes.</p>
+        </section>
+
+        <section class="settings-card">
+          <p class="eyebrow">Your data</p>
+          <h2>Backup learning data</h2>
+          <p>Export saved skills, lessons, notes, quiz results, progress, and your appearance preference. Backups are tied to this account and do not contain your password or session.</p>
+          <div class="detail-actions">
+            <button class="btn" id="export-data" type="button">Export my data</button>
+            <label class="btn btn-secondary file-button" for="import-data">Import backup</label>
+            <input id="import-data" type="file" accept="application/json,.json" hidden />
+          </div>
+          <p class="muted">Importing replaces saved learning data for this account. Only use a backup you trust.</p>
+        </section>
+      </form>
+
+      <form class="settings-grid password-settings" id="password-change-form">
+        <section class="settings-card">
+          <p class="eyebrow">Account security</p>
+          <h2>Change password</h2>
+          <p>Confirm your current password before choosing a new one. If you have forgotten it, email yourself a secure reset link instead.</p>
+          <label>
+            Current password
+            <input type="password" name="currentPassword" autocomplete="current-password" required />
+          </label>
+          <label>
+            New password
+            <input type="password" name="newPassword" autocomplete="new-password" minlength="8" maxlength="128" required />
+          </label>
+          <label>
+            Confirm new password
+            <input type="password" name="confirmPassword" autocomplete="new-password" minlength="8" maxlength="128" required />
+          </label>
+          <div class="detail-actions">
+            <button class="btn" type="submit">Update password</button>
+            <button class="btn btn-secondary" id="settings-reset-password" type="button">Email me a reset link</button>
+          </div>
+          <p class="form-status" id="password-change-status" role="status" aria-live="polite"></p>
+        </section>
+      </form>
+
+      <p class="settings-privacy">Review how your information is handled in the <a href="privacy.html">Privacy Policy</a>.</p>
+    </main>
+
+    <footer class="site-footer">
+      <div class="container footer-content">
+        <div class="footer-brand">
+          <p class="footer-built-by">BUILT BY</p>
+          <a class="footer-hydev" href="https://aliyujazuli.netlify.app" target="_blank" rel="noopener noreferrer" aria-label="Visit the HYDEV ecosystem">
+            <img src="assets/hydev-logo-tile.png" alt="HYDEV" width="116" height="90" />
+          </a>
+          <p class="footer-copyright">&copy; 2026 Skillex. All rights reserved.</p>
+          <p class="footer-attribution">Skillex — A HYDEV product</p>
+          <a href="privacy.html">Privacy Policy</a>
+        </div>
+      </div>
+    </footer>
+
+    <script src="js/navigation.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="js/supabase-config.js"></script>
+    <script src="js/backend.js"></script>
+    <script src="js/modules/learning-data.js"></script>
+    <script src="js/modules/learning-ui.js"></script>
+    <script src="js/script.js"></script>
+  </body>
+</html>

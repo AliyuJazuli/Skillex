@@ -57,6 +57,11 @@ function createQueryClient(responses = {}) {
           this.values = values;
           return this;
         },
+        upsert(values) {
+          this.operation = "upsert";
+          this.values = values;
+          return this;
+        },
         then(resolve, reject) {
           calls.push({
             table,
@@ -74,37 +79,35 @@ function createQueryClient(responses = {}) {
   return { client, calls };
 }
 
-test("sign-up sends the expected profile metadata and production redirect", async () => {
-  let received;
-  const client = {
-    auth: {
-      signUp: async (options) => {
-        received = options;
-        return { data: { user: { id: "member-1" }, session: null }, error: null };
-      }
-    }
-  };
-  const backend = createBackend(client);
+test("public onboarding requests access instead of creating an account", () => {
+  const backend = createBackend({ auth: { signUp: () => assert.fail("public sign-up must not be called") } });
+  assert.equal(backend.signUp, undefined);
+  const root = path.join(__dirname, "..");
+  const requestPage = fs.readFileSync(path.join(root, "signup.html"), "utf8");
+  const app = fs.readFileSync(path.join(root, "js", "script.js"), "utf8");
+  assert.match(requestPage, /name="account-access-request" method="POST" data-netlify="true"/);
+  assert.match(requestPage, /name="privacy-consent" value="accepted" required/);
+  assert.match(app, /function handleAccessRequestSubmit\(event\)/);
+  assert.doesNotMatch(app, /backend\.signUp/);
+});
 
-  const result = await backend.signUp({
-    name: "Learner",
-    email: "learner@example.com",
-    password: "example-password",
-    bio: "Learning together",
-    learnGoals: "Python",
-    teachGoals: "Design",
-    role: "Both"
-  });
+test("match ranking includes any shared selected skill and prioritizes reciprocal exchanges", () => {
+  const backend = createBackend({ auth: {} });
+  const entries = [
+    { user_id: "reciprocal", name: "Riley", bio: "", skill_id: "python", intent: "teach" },
+    { user_id: "reciprocal", name: "Riley", bio: "", skill_id: "design", intent: "learn" },
+    { user_id: "one-way", name: "Alex", bio: "", skill_id: "python", intent: "teach" },
+    { user_id: "shared-only", name: "Sam", bio: "", skill_id: "python", intent: "learn" },
+    { user_id: "unrelated", name: "Taylor", bio: "", skill_id: "photography", intent: "teach" }
+  ];
 
-  assert.equal(result.user.id, "member-1");
-  assert.equal(received.options.emailRedirectTo, "https://skillex-hydev.netlify.app");
-  assert.equal(JSON.stringify(received.options.data), JSON.stringify({
-    display_name: "Learner",
-    bio: "Learning together",
-    learn_goals: "Python",
-    teach_goals: "Design",
-    role: "Both"
-  }));
+  const matches = JSON.parse(JSON.stringify(backend.rankMatches(entries, "python", "design")));
+
+  assert.deepEqual(matches.map(({ id, score, matchedSkills }) => ({ id, score, matchedSkills })), [
+    { id: "reciprocal", score: 3, matchedSkills: ["python", "design"] },
+    { id: "one-way", score: 2, matchedSkills: ["python"] },
+    { id: "shared-only", score: 1, matchedSkills: ["python"] }
+  ]);
 });
 
 test("backend operations surface Supabase errors", async () => {
@@ -116,6 +119,34 @@ test("backend operations surface Supabase errors", async () => {
   });
 
   await assert.rejects(backend.signIn("learner@example.com", "password"), failure);
+});
+
+test("backend sends password reset links and updates passwords", async () => {
+  const calls = [];
+  const backend = createBackend({
+    auth: {
+      resetPasswordForEmail: async (email, options) => {
+        calls.push({ operation: "reset", email, options });
+        return { data: {}, error: null };
+      },
+      updateUser: async (values) => {
+        calls.push({ operation: "update", values });
+        return { data: { user: { id: "member-1" } }, error: null };
+      }
+    }
+  });
+
+  await backend.sendPasswordReset("learner@example.com", "https://skillex-hydev.netlify.app/reset-password.html");
+  await backend.updatePassword("a-strong-password");
+
+  assert.deepEqual(JSON.parse(JSON.stringify(calls)), [
+    {
+      operation: "reset",
+      email: "learner@example.com",
+      options: { redirectTo: "https://skillex-hydev.netlify.app/reset-password.html" }
+    },
+    { operation: "update", values: { password: "a-strong-password" } }
+  ]);
 });
 
 test("saved skills sync only the additions and removals", async () => {
@@ -132,6 +163,28 @@ test("saved skills sync only the additions and removals", async () => {
   assert.ok(calls.some((call) => call.table === "saved_skills"
     && call.operation === "insert"
     && call.values.some((row) => row.user_id === "member-1" && row.skill_id === "add")));
+});
+
+test("imported learning progress replaces existing server progress", async () => {
+  const { client, calls } = createQueryClient({
+    learning_progress: {
+      select: { data: [{ skill_id: "keep" }, { skill_id: "remove" }], error: null },
+      delete: { data: [], error: null },
+      upsert: { data: [], error: null }
+    }
+  });
+  const backend = createBackend(client);
+  await backend.replaceLearningProgress("member-1", {
+    keep: { completedLessons: ["Lesson"], activeLesson: "Lesson", notes: "note" }
+  });
+
+  assert.ok(calls.some((call) => call.table === "learning_progress"
+    && call.operation === "delete"
+    && call.filters.some(([, column, values]) => column === "skill_id" && values.includes("remove"))));
+  assert.ok(calls.some((call) => call.table === "learning_progress"
+    && call.operation === "upsert"
+    && call.values.user_id === "member-1"
+    && call.values.skill_id === "keep"));
 });
 
 test("curated SQL migration preserves authored course lessons", async () => {
@@ -158,6 +211,7 @@ test("site pages consistently load the backend and use the Skillex origin", () =
 
   for (const page of pages) {
     const html = fs.readFileSync(path.join(root, page), "utf8");
+    assert.match(html, /href="css\/style\.css"/, page);
     assert.match(html, /https:\/\/cdn\.jsdelivr\.net\/npm\/@supabase\/supabase-js@2/ , page);
     assert.match(html, /js\/supabase-config\.js/ , page);
     assert.match(html, /js\/backend\.js/ , page);
@@ -169,6 +223,8 @@ test("site pages consistently load the backend and use the Skillex origin", () =
   const homepage = fs.readFileSync(path.join(root, "index.html"), "utf8");
   assert.match(homepage, /name="google-site-verification" content="KygdRzP9SjeJACyAkETodHC9Zl6L5okWZuWyTA2SWU0"/);
   assert.doesNotMatch(homepage, /1\.2k\+|4\.2\/5|student rating|100\+ student-led skills/i);
+  assert.doesNotMatch(homepage, /trading every day|students nearby|Book sessions/i);
+  assert.match(homepage, /href="signup\.html" class="btn">Request access/);
 
   const contact = fs.readFileSync(path.join(root, "contact.html"), "utf8");
   assert.match(contact, /aliyujaxuli@gmail\.com/);
@@ -176,11 +232,69 @@ test("site pages consistently load the backend and use the Skillex origin", () =
   const app = fs.readFileSync(path.join(root, "js", "script.js"), "utf8");
   assert.match(app, /function showToast\(/);
   assert.match(app, /savePendingToast\("Welcome back\. You are now signed in\."/);
+  assert.match(app, /backend\.rankMatches\(entries, learnSkillId, teachSkillId\)/);
+  assert.match(app, /No users yet\. Start your own group/);
+  assert.match(app, /This post is not shared with other members yet/);
+  assert.match(app, /link\.style\.display = isLoggedIn \|\| currentPage === "login\.html" \? "none" : ""/);
+  assert.match(app, /function setThemePreference\(preference\)/);
+  assert.match(app, /function exportUserData\(\)/);
+  assert.match(app, /function validateUserBackup\(backup, user\)/);
+  assert.match(app, /function submitNetlifyForm\(form, status, successMessage\)/);
+  assert.match(app, /window\.__SKILLEX_USER_DATA_CACHE/);
+
+  const backend = fs.readFileSync(path.join(root, "js", "backend.js"), "utf8");
+  assert.match(backend, /window\.__SKILLEX_COURSES_CACHE/);
+  assert.match(backend, /window\.__SKILLEX_PROFILE_CACHE/);
+
+  const settings = fs.readFileSync(path.join(root, "settings.html"), "utf8");
+  assert.match(settings, /<option value="system">Follow system<\/option>/);
+  assert.match(settings, /id="export-data"/);
+  assert.match(settings, /id="import-data"/);
+  assert.match(settings, /id="password-change-form"/);
+  assert.match(settings, /id="settings-reset-password"/);
+
+  const privacy = fs.readFileSync(path.join(root, "privacy.html"), "utf8");
+  assert.match(privacy, /Privacy Policy/);
+  assert.match(privacy, /Netlify/);
+
+  const login = fs.readFileSync(path.join(root, "login.html"), "utf8");
+  assert.match(login, /href="forgot-password\.html"/);
+  for (const [page, form] of [
+    ["forgot-password.html", "forgot-password-form"],
+    ["reset-password.html", "reset-password-form"],
+    ["complete-profile.html", "complete-invitation-form"]
+  ]) {
+    assert.match(fs.readFileSync(path.join(root, page), "utf8"), new RegExp(`id="${form}"`));
+  }
+
+  assert.match(app, /function handleForgotPasswordSubmit\(event\)/);
+  assert.match(app, /function handleResetPasswordSubmit\(event\)/);
+  assert.match(app, /function handleInvitationCompleteSubmit\(event\)/);
+  assert.match(app, /function handleSettingsPasswordSubmit\(event\)/);
+  assert.match(app, /reply within 24 hours/);
+
+  assert.match(backend, /async function sendPasswordReset\(email, redirectTo\)/);
+  assert.match(backend, /async function updatePassword\(password\)/);
 
   const navigation = fs.readFileSync(path.join(root, "js", "navigation.js"), "utf8");
   assert.match(navigation, /history\.pushState\(\{ skillexRoute: routePath \}, "", window\.location\.origin\)/);
   assert.match(navigation, /document\.addEventListener\("click"/);
+  assert.match(navigation, /const quickNavigation = document\.querySelector\("\.quick-nav"\)/);
 
   const themeInit = fs.readFileSync(path.join(root, "js", "theme-init.js"), "utf8");
   assert.match(themeInit, /document\.documentElement\.classList\.toggle\("dark", useDarkTheme\)/);
+});
+
+test("page navigation keeps stylesheets active and shows a loading screen", () => {
+  const root = path.join(__dirname, "..");
+  const navigation = fs.readFileSync(path.join(root, "js", "navigation.js"), "utf8");
+  const styles = fs.readFileSync(path.join(root, "css", "style.css"), "utf8");
+
+  assert.match(navigation, /className = "navigation-loader"/);
+  assert.match(navigation, /async function replaceHead\(nextDocument\)/);
+  assert.match(navigation, /const existingStylesheets = new Map/);
+  assert.match(navigation, /document\.body\.replaceChildren\(\.\.\.bodyNodes, navigationLoader\)/);
+  assert.match(navigation, /finally \{\s*if \(sequence === navigationSequence\) setNavigationLoading\(false\)/);
+  assert.match(styles, /\.navigation-loader\[data-visible="true"\]/);
+  assert.match(styles, /@media \(prefers-reduced-motion: reduce\)/);
 });

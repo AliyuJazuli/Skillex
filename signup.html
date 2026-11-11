@@ -3,11 +3,8 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Skillex | Sign Up</title>
-    <meta name="description" content="Create a Skillex account to exchange skills and share knowledge." />
-    <meta name="author" content="Aliyu Jazuli" />
-    <meta name="creator" content="Aliyu Jazuli" />
-    <meta name="publisher" content="HYDEV" />
+    <title>Skillex | Request access</title>
+    <meta name="description" content="Request an invitation to Skillex. Accounts are currently created by the Skillex team." />
     <meta name="theme-color" content="#176b56" />
     <link rel="icon" href="assets/favicon.ico" sizes="any" />
     <link rel="icon" href="assets/skillex-logo.svg" type="image/svg+xml" />
@@ -16,81 +13,59 @@
     <link rel="canonical" href="https://skillex-hydev.netlify.app/signup.html" />
     <meta property="og:type" content="website" />
     <meta property="og:site_name" content="Skillex" />
-    <meta property="og:title" content="Skillex | Sign Up" />
-    <meta property="og:description" content="Skillex is a platform where people exchange skills, share knowledge, connect with others, and grow together." />
+    <meta property="og:title" content="Request Skillex access" />
+    <meta property="og:description" content="Request an invitation to Skillex." />
     <meta property="og:image" content="https://skillex-hydev.netlify.app/assets/skillex-social.png" />
-    <meta property="og:image:width" content="1200" />
-    <meta property="og:image:height" content="630" />
-    <meta property="og:image:alt" content="Skillex logo: Where people exchange skills, share knowledge, and grow together." />
     <meta name="twitter:card" content="summary_large_image" />
-    <meta name="twitter:title" content="Skillex | Sign Up" />
-    <meta name="twitter:description" content="Skillex is a platform where people exchange skills, share knowledge, connect with others, and grow together." />
+    <meta name="twitter:title" content="Request Skillex access" />
     <meta name="twitter:image" content="https://skillex-hydev.netlify.app/assets/skillex-social.png" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
     <script src="js/theme-init.js"></script>
     <link rel="stylesheet" href="css/style.css" />
-      <meta property="og:image:type" content="image/png" />
-      <meta property="og:url" content="https://skillex-hydev.netlify.app/signup.html" />
-      <meta name="twitter:image:alt" content="Skillex logo: Where people exchange skills, share knowledge, and grow together." />
-      <meta name="application-name" content="Skillex" />
-      <meta name="robots" content="noindex, nofollow" />
+    <meta name="robots" content="noindex, nofollow" />
   </head>
   <body>
     <header class="site-header">
       <nav class="navbar container">
         <a href="index.html" class="logo">Skillex</a>
         <div class="nav-actions">
-          <button class="theme-toggle" type="button" aria-label="Toggle color theme">
-            <span class="theme-toggle__icon">☀️</span>
-          </button>
-          <a href="login.html" class="btn btn-sm">Login</a>
+          <button class="theme-toggle" type="button" aria-label="Toggle color theme"><span class="theme-toggle__icon">☀️</span></button>
+          <a href="login.html" class="btn btn-sm" data-auth="login">Login</a>
         </div>
       </nav>
     </header>
 
     <main class="container page-shell auth-shell">
       <section class="auth-card">
-        <p class="eyebrow">Join the community</p>
-        <h1>Create your Skillex account</h1>
-        <form class="contact-form auth-form" id="signup-form">
+        <p class="eyebrow">Request an invitation</p>
+        <h1>Join Skillex</h1>
+        <p>New accounts are created by invitation only. Send an access request and the Skillex team will reply within 24 hours. This form does not create an account.</p>
+        <form class="contact-form auth-form" id="access-request-form" name="account-access-request" method="POST" data-netlify="true" netlify-honeypot="bot-field">
+          <input type="hidden" name="form-name" value="account-access-request" />
+          <p class="visually-hidden"><label>Leave this field empty: <input name="bot-field" /></label></p>
           <label>
-            Full name
-            <input type="text" name="name" placeholder="yourname surname" required />
+            Name
+            <input type="text" name="name" autocomplete="name" maxlength="80" required />
           </label>
           <label>
             Email
-            <input type="email" name="email" placeholder="you@example.com" required />
+            <input type="email" name="email" autocomplete="email" maxlength="254" required />
           </label>
           <label>
-            Password
-            <input type="password" name="password" placeholder="At least 6 characters" required />
+            What would you like to learn or share?
+            <textarea name="interests" rows="4" maxlength="1000" required></textarea>
           </label>
-          <label>
-            Bio
-            <textarea name="bio" rows="3" placeholder="Tell others what you want to learn or share"></textarea>
+          <label class="checkbox-label">
+            <input type="checkbox" name="privacy-consent" value="accepted" required />
+            <span>I have read the <a href="privacy.html">Privacy Policy</a> and agree to the handling of this request.</span>
           </label>
-          <label>
-            I want to learn
-            <input type="text" name="learnGoals" placeholder="HTML, CSS, Python, UI/UX" />
-          </label>
-          <label>
-            I can teach
-            <input type="text" name="teachGoals" placeholder="JavaScript, Public Speaking, Mathematics" />
-          </label>
-          <label>
-            Role
-            <select name="role">
-              <option value="Learner">Learner</option>
-              <option value="Teacher">Teacher</option>
-              <option value="Both">Both</option>
-            </select>
-          </label>
-          <button class="btn" type="submit">Create account</button>
-          <p class="form-status" id="signup-status" role="status" aria-live="polite"></p>
+          <button class="btn" type="submit">Request access</button>
+          <p class="form-status" id="access-request-status" role="status" aria-live="polite"></p>
         </form>
         <p class="auth-link">Already have an account? <a href="login.html">Login</a></p>
+        <p class="auth-link">Prefer email? <a href="mailto:aliyujaxuli@gmail.com,hydeveco@gmail.com?subject=Skillex%20access%20request">Contact the Skillex team</a>.</p>
       </section>
     </main>
 
@@ -103,6 +78,7 @@
           </a>
           <p class="footer-copyright">&copy; 2026 Skillex. All rights reserved.</p>
           <p class="footer-attribution">Skillex — A HYDEV product</p>
+          <a href="privacy.html">Privacy Policy</a>
         </div>
       </div>
     </footer>

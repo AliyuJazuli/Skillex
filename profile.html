@@ -60,7 +60,13 @@
         <form class="contact-form" id="profile-form">
           <div class="profile-photo-row">
             <img id="profile-photo-preview" class="profile-photo" alt="Your profile preview" />
-            <label>Profile picture<input type="file" id="profile-photo-input" accept="image/png,image/jpeg,image/webp" /></label>
+            <div class="profile-photo-picker">
+              <p>Profile picture</p>
+              <p class="muted">PNG, JPEG, or WebP, up to 5 MB.</p>
+              <input type="file" id="profile-photo-input" accept="image/png,image/jpeg,image/webp" hidden />
+              <button class="btn btn-small" id="choose-profile-photo" type="button">Choose photo</button>
+              <p class="form-status" id="profile-photo-status" role="status" aria-live="polite"></p>
+            </div>
           </div>
           <label>
             Full name
@@ -98,6 +104,7 @@
           </a>
           <p class="footer-copyright">&copy; 2026 Skillex. All rights reserved.</p>
           <p class="footer-attribution">Skillex — A HYDEV product</p>
+          <a href="privacy.html">Privacy Policy</a>
         </div>
       </div>
     </footer>

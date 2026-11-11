@@ -50,30 +50,24 @@ window.SkillexBackend = (() => {
     }
   }
 
-  async function signUp({ name, email, password, bio, learnGoals, teachGoals, role }) {
-    const db = getClient();
-    return throwIfError(await db.auth.signUp({
-      email,
-      password,
-      options: {
-        data: {
-          display_name: name,
-          bio,
-          learn_goals: learnGoals,
-          teach_goals: teachGoals,
-          role
-        },
-        emailRedirectTo: "https://skillex-hydev.netlify.app"
-      }
-    }));
-  }
-
   async function signIn(email, password) {
     return throwIfError(await getClient().auth.signInWithPassword({ email, password }));
   }
 
+  async function sendPasswordReset(email, redirectTo) {
+    return throwIfError(await getClient().auth.resetPasswordForEmail(email, { redirectTo }));
+  }
+
+  async function updatePassword(password) {
+    return throwIfError(await getClient().auth.updateUser({ password }));
+  }
+
   async function signOut() {
-    return throwIfError(await getClient().auth.signOut());
+    const result = throwIfError(await getClient().auth.signOut());
+    window.__SKILLEX_PROFILE_CACHE = null;
+    window.__SKILLEX_PROFILE_PENDING = null;
+    window.__SKILLEX_USER_DATA_CACHE = null;
+    return result;
   }
 
   async function getSession() {
@@ -81,7 +75,7 @@ window.SkillexBackend = (() => {
     return result.session;
   }
 
-  async function loadProfile(user, catalog) {
+  async function loadProfileFromBackend(user, catalog) {
     const db = getClient();
     const profile = throwIfError(await db.from("profiles")
       .select("id,display_name,bio,avatar_path,created_at")
@@ -119,6 +113,29 @@ window.SkillexBackend = (() => {
     };
   }
 
+  async function loadProfile(user, catalog) {
+    const cached = window.__SKILLEX_PROFILE_CACHE;
+    if (cached?.userId === user.id && cached.expiresAt > Date.now()) return cached.profile;
+    if (window.__SKILLEX_PROFILE_PENDING?.userId === user.id) {
+      return window.__SKILLEX_PROFILE_PENDING.promise;
+    }
+
+    const promise = loadProfileFromBackend(user, catalog)
+      .then((profile) => {
+        window.__SKILLEX_PROFILE_CACHE = {
+          userId: user.id,
+          profile,
+          expiresAt: Date.now() + 30000
+        };
+        return profile;
+      })
+      .finally(() => {
+        window.__SKILLEX_PROFILE_PENDING = null;
+      });
+    window.__SKILLEX_PROFILE_PENDING = { userId: user.id, promise };
+    return promise;
+  }
+
   async function updateProfile(user, values, catalog) {
     const db = getClient();
     const changes = {
@@ -137,6 +154,7 @@ window.SkillexBackend = (() => {
       bio: values.bio
     }).eq("id", user.id));
     await saveProfileSkills(user.id, values.learnGoals, values.teachGoals, catalog);
+    window.__SKILLEX_PROFILE_CACHE = null;
     const profile = await loadProfile({
       ...user,
       email: authUser.user.email,
@@ -146,9 +164,26 @@ window.SkillexBackend = (() => {
   }
 
   async function loadCourses() {
-    return throwIfError(await getClient().from("skills")
+    const cached = window.__SKILLEX_COURSES_CACHE;
+    if (cached?.expiresAt > Date.now()) return cached.courses;
+    if (window.__SKILLEX_COURSES_PENDING) return window.__SKILLEX_COURSES_PENDING;
+
+    const promise = getClient().from("skills")
       .select("id,title,category,description,course_content")
-      .order("title"));
+      .order("title")
+      .then((result) => {
+        const courses = throwIfError(result);
+        window.__SKILLEX_COURSES_CACHE = {
+          courses,
+          expiresAt: Date.now() + 60000
+        };
+        return courses;
+      })
+      .finally(() => {
+        window.__SKILLEX_COURSES_PENDING = null;
+      });
+    window.__SKILLEX_COURSES_PENDING = promise;
+    return promise;
   }
 
   async function loadProfileSkills(userId) {
@@ -226,6 +261,24 @@ window.SkillexBackend = (() => {
     }, { onConflict: "user_id,skill_id" }));
   }
 
+  async function replaceLearningProgress(userId, progressBySkill) {
+    const db = getClient();
+    const current = throwIfError(await db.from("learning_progress")
+      .select("skill_id")
+      .eq("user_id", userId));
+    const skillIds = Object.keys(progressBySkill);
+    const removeIds = current.map((entry) => entry.skill_id).filter((id) => !skillIds.includes(id));
+    if (removeIds.length) {
+      throwIfError(await db.from("learning_progress")
+        .delete()
+        .eq("user_id", userId)
+        .in("skill_id", removeIds));
+    }
+    for (const [skillId, progress] of Object.entries(progressBySkill)) {
+      await saveProgress(userId, skillId, progress);
+    }
+  }
+
   async function replaceSavedSkills(userId, skillIds) {
     const db = getClient();
     const current = throwIfError(await db.from("saved_skills").select("skill_id").eq("user_id", userId));
@@ -276,6 +329,40 @@ window.SkillexBackend = (() => {
     }));
   }
 
+  function rankMatches(entries, learnSkillId, teachSkillId) {
+    const peers = new Map();
+    for (const entry of entries) {
+      if (!peers.has(entry.user_id)) {
+        peers.set(entry.user_id, {
+          id: entry.user_id,
+          name: entry.name,
+          bio: entry.bio,
+          teaches: [],
+          learns: []
+        });
+      }
+      const peer = peers.get(entry.user_id);
+      peer[entry.intent === "teach" ? "teaches" : "learns"].push(entry.skill_id);
+    }
+
+    const selectedSkills = new Set([learnSkillId, teachSkillId].filter(Boolean));
+    return [...peers.values()]
+      .map((peer) => {
+        const matchedSkills = [...selectedSkills].filter((skillId) =>
+          peer.teaches.includes(skillId) || peer.learns.includes(skillId)
+        );
+        if (!matchedSkills.length) return null;
+
+        const canTeachWanted = peer.teaches.includes(learnSkillId);
+        const wantsOffered = peer.learns.includes(teachSkillId);
+        const score = canTeachWanted && wantsOffered ? 3 : canTeachWanted || wantsOffered ? 2 : 1;
+        return { ...peer, matchedSkills, score };
+      })
+      .filter(Boolean)
+      .sort((left, right) => right.score - left.score
+        || String(left.name || "").localeCompare(String(right.name || "")));
+  }
+
   async function createSwapRequest(request) {
     return throwIfError(await getClient().from("swap_requests").insert({
       requester_id: request.requesterId,
@@ -316,8 +403,9 @@ window.SkillexBackend = (() => {
 
   return {
     isConfigured: Boolean(client),
-    signUp,
     signIn,
+    sendPasswordReset,
+    updatePassword,
     signOut,
     getSession,
     loadProfile,
@@ -326,9 +414,11 @@ window.SkillexBackend = (() => {
     loadProfileSkills,
     loadUserData,
     saveProgress,
+    replaceLearningProgress,
     replaceSavedSkills,
     replaceSavedLessons,
     loadMatches,
+    rankMatches,
     createSwapRequest,
     updateSwapStatus,
     uploadAvatar,

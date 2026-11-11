@@ -2389,10 +2389,17 @@ function getCurrentUser() {
 function saveCurrentUser(user) {
   if (!user) {
     localStorage.removeItem(STORAGE_KEYS.currentUser);
+    window.__SKILLEX_PROFILE_CACHE = null;
+    window.__SKILLEX_USER_DATA_CACHE = null;
     return;
   }
   const { password, ...safeUser } = user;
   writeStorage(STORAGE_KEYS.currentUser, safeUser);
+  window.__SKILLEX_PROFILE_CACHE = {
+    userId: safeUser.id,
+    profile: safeUser,
+    expiresAt: Date.now() + 30000
+  };
 }
 
 function getUsers() {
@@ -2555,95 +2562,91 @@ function getSkillProgressPercent(skillId) {
   return Math.round((completedCount / skill.lessons.length) * 100);
 }
 
-/**
- * FIXED: updateAuthLinks() - Properly hides login/signup when user is logged in
- * Replace the existing updateAuthLinks function in script.js with this one
- */
 function updateAuthLinks() {
   const currentUser = getCurrentUser();
   const isLoggedIn = !!currentUser;
+  const navActions = document.querySelector(".nav-actions");
 
-  // Handle all auth-related elements by data attribute
+  if (navActions) {
+    const navLinks = [...navActions.querySelectorAll("a[href]")];
+    navLinks.forEach((link) => {
+      const page = new URL(link.href, window.location.origin).pathname.split("/").pop();
+      if (page === "signup.html") {
+        link.remove();
+      } else if (page === "login.html") {
+        link.dataset.auth = "login";
+      } else if (page === "dashboard.html") {
+        link.dataset.auth = "dashboard";
+      } else if (page === "settings.html") {
+        link.dataset.auth = "settings";
+      }
+    });
+
+    if (!navActions.querySelector('[data-auth="dashboard"]')) {
+      const dashboardLink = document.createElement("a");
+      dashboardLink.href = "dashboard.html";
+      dashboardLink.className = "btn btn-sm";
+      dashboardLink.dataset.auth = "dashboard";
+      dashboardLink.textContent = "Dashboard";
+      navActions.append(dashboardLink);
+    }
+
+    if (!navActions.querySelector('[data-auth="settings"]')) {
+      const settingsLink = document.createElement("a");
+      settingsLink.href = "settings.html";
+      settingsLink.className = "btn btn-sm";
+      settingsLink.dataset.auth = "settings";
+      settingsLink.textContent = "Settings";
+      navActions.append(settingsLink);
+    }
+
+    if (!navActions.querySelector('[data-auth="login"]')) {
+      const loginLink = document.createElement("a");
+      loginLink.href = "login.html";
+      loginLink.className = "btn btn-sm";
+      loginLink.dataset.auth = "login";
+      loginLink.textContent = "Login";
+      navActions.append(loginLink);
+    }
+  }
+
   const loginElements = document.querySelectorAll('[data-auth="login"]');
-  const signupElements = document.querySelectorAll('[data-auth="signup"]');
+  const currentPage = window.SKILLEX_ROUTE_URL?.pathname.split("/").pop() || "";
+  const dashboardElements = document.querySelectorAll('[data-auth="dashboard"]');
+  const settingsElements = document.querySelectorAll('[data-auth="settings"]');
   const logoutElements = document.querySelectorAll('[data-auth="logout"]');
   const profileElements = document.querySelectorAll('[data-auth="profile"]');
-  const dashboardElements = document.querySelectorAll('[data-auth="dashboard"]');
   const authOnlyElements = document.querySelectorAll('[data-auth="auth-only"]');
   const guestOnlyElements = document.querySelectorAll('[data-auth="guest-only"]');
 
-  // Login links
-  loginElements.forEach(link => {
-    if (isLoggedIn) {
-      link.textContent = 'Dashboard';
-      link.href = 'dashboard.html';
-      link.style.display = '';
-    } else {
-      link.textContent = 'Login';
-      link.href = 'login.html';
-      link.style.display = '';
-    }
+  loginElements.forEach((link) => {
+    link.textContent = "Login";
+    link.href = "login.html";
+    link.style.display = isLoggedIn || currentPage === "login.html" ? "none" : "";
   });
-
-  // Signup links - HIDE when logged in
-  signupElements.forEach(link => {
-    link.style.display = isLoggedIn ? 'none' : '';
+  dashboardElements.forEach((link, index) => {
+    link.textContent = "Dashboard";
+    link.href = "dashboard.html";
+    link.style.display = isLoggedIn && index === 0 ? "" : "none";
   });
-
-  // Logout links - SHOW when logged in
-  logoutElements.forEach(link => {
-    link.style.display = isLoggedIn ? '' : 'none';
+  settingsElements.forEach((link, index) => {
+    link.textContent = "Settings";
+    link.href = "settings.html";
+    link.style.display = isLoggedIn && index === 0 ? "" : "none";
   });
-
-  // Profile links - SHOW when logged in
-  profileElements.forEach(link => {
-    link.style.display = isLoggedIn ? '' : 'none';
-    if (isLoggedIn && currentUser) {
-      link.textContent = currentUser.name || 'Profile';
-    }
+  logoutElements.forEach((link) => {
+    link.style.display = isLoggedIn ? "" : "none";
   });
-
-  // Dashboard links - SHOW when logged in
-  dashboardElements.forEach(link => {
-    link.style.display = isLoggedIn ? '' : 'none';
+  profileElements.forEach((link) => {
+    link.style.display = isLoggedIn ? "" : "none";
+    if (isLoggedIn) link.textContent = currentUser.name || "Profile";
   });
-
-  // Auth-only elements (login/signup page elements) - HIDE when logged in
-  authOnlyElements.forEach(el => {
-    el.style.display = isLoggedIn ? 'none' : '';
+  authOnlyElements.forEach((element) => {
+    element.style.display = isLoggedIn ? "none" : "";
   });
-
-  // Guest-only elements (pages only guests should see) - HIDE when logged in
-  guestOnlyElements.forEach(el => {
-    el.style.display = isLoggedIn ? 'none' : '';
+  guestOnlyElements.forEach((element) => {
+    element.style.display = isLoggedIn ? "none" : "";
   });
-
-  // Also update the nav-actions area in index.html (the "Join Now" button area)
-  const navActions = document.querySelector('.nav-actions');
-  if (navActions && !isLoggedIn) {
-    // Ensure login and signup links exist in nav for guests
-    if (!navActions.querySelector('[data-auth="login"]')) {
-      // Add login link if missing and user is guest
-      const loginLink = document.createElement('a');
-      loginLink.href = 'login.html';
-      loginLink.className = 'btn btn-sm';
-      loginLink.setAttribute('data-auth', 'login');
-      loginLink.textContent = 'Login';
-      navActions.insertBefore(loginLink, navActions.firstChild);
-    }
-    if (!navActions.querySelector('[data-auth="signup"]')) {
-      // Add signup link if missing and user is guest
-      const signupLink = document.createElement('a');
-      signupLink.href = 'signup.html';
-      signupLink.className = 'btn btn-sm';
-      signupLink.setAttribute('data-auth', 'signup');
-      signupLink.textContent = 'Sign Up';
-      navActions.insertBefore(signupLink, navActions.querySelector('[data-auth="login"]')?.nextSibling || null);
-    }
-  } else if (navActions && isLoggedIn) {
-    // Remove dynamically added login/signup links when logged in
-    navActions.querySelectorAll('[data-dynamic-auth]').forEach(el => el.remove());
-  }
 
   // Update breadcrumb if it exists
   const breadcrumb = document.querySelector('.breadcrumb-user');
@@ -2667,12 +2670,13 @@ function updateAuthLinks() {
 }
 
 function applyTheme() {
-  const savedTheme = localStorage.getItem(STORAGE_KEYS.theme);
-  const isDark = savedTheme === "dark";
+  const preference = getThemePreference();
+  const isDark = resolveDarkTheme(preference);
 
   body.classList.toggle("dark", isDark);
   document.documentElement.classList.toggle("dark", isDark);
   document.documentElement.setAttribute("data-theme", isDark ? "dark" : "light");
+  document.documentElement.setAttribute("data-theme-preference", preference);
   document.documentElement.style.colorScheme = isDark ? "dark" : "light";
 
   if (themeToggle) {
@@ -2682,23 +2686,42 @@ function applyTheme() {
     }
     themeToggle.setAttribute("aria-label", isDark ? "Switch to light theme" : "Switch to dark theme");
   }
+  const preferenceControl = document.getElementById("theme-preference");
+  if (preferenceControl) preferenceControl.value = preference;
+}
+
+function getThemePreference() {
+  const preference = localStorage.getItem(STORAGE_KEYS.theme);
+  return ["system", "light", "dark"].includes(preference) ? preference : "system";
+}
+
+function resolveDarkTheme(preference) {
+  return preference === "dark"
+    || (preference === "system" && window.matchMedia?.("(prefers-color-scheme: dark)").matches);
+}
+
+function setThemePreference(preference) {
+  if (!["system", "light", "dark"].includes(preference)) {
+    throw new Error("Choose system, light, or dark appearance.");
+  }
+  localStorage.setItem(STORAGE_KEYS.theme, preference);
+  applyTheme();
 }
 
 if (themeToggle) {
   applyTheme();
 
   themeToggle.addEventListener("click", () => {
-    const isDark = body.classList.toggle("dark");
-    localStorage.setItem(STORAGE_KEYS.theme, isDark ? "dark" : "light");
-    document.documentElement.classList.toggle("dark", isDark);
-    document.documentElement.setAttribute("data-theme", isDark ? "dark" : "light");
-    document.documentElement.style.colorScheme = isDark ? "dark" : "light";
+    setThemePreference(resolveDarkTheme(getThemePreference()) ? "light" : "dark");
+  });
+}
 
-    const icon = themeToggle.querySelector(".theme-toggle__icon");
-    if (icon) {
-      icon.textContent = isDark ? "🌙" : "☀️";
-    }
-    themeToggle.setAttribute("aria-label", isDark ? "Switch to light theme" : "Switch to dark theme");
+window.SkillexApplyTheme = applyTheme;
+const systemThemeQuery = window.matchMedia?.("(prefers-color-scheme: dark)");
+if (systemThemeQuery && !window.__SKILLEX_SYSTEM_THEME_LISTENER) {
+  window.__SKILLEX_SYSTEM_THEME_LISTENER = true;
+  systemThemeQuery.addEventListener("change", () => {
+    if (getThemePreference() === "system") window.SkillexApplyTheme?.();
   });
 }
 
@@ -2719,9 +2742,13 @@ if (navToggle && navLinks) {
 
 function ensureProtectedAccess() {
   const page = window.SKILLEX_ROUTE_URL?.pathname.split("/").pop() || window.location.pathname.split("/").pop();
-  const protectedPages = ["dashboard.html", "profile.html", "saved-skills.html"];
+  const protectedPages = ["dashboard.html", "profile.html", "saved-skills.html", "settings.html"];
   if (protectedPages.includes(page) && !getCurrentUser()) {
     navigateTo("login.html", "replace");
+    return false;
+  }
+  if (page === "login.html" && getCurrentUser()) {
+    navigateTo("dashboard.html", "replace");
     return false;
   }
   return true;
@@ -3059,7 +3086,6 @@ function renderSkillDetailPage() {
       <p class="eyebrow">${skill.category}</p>
       <h2>${skill.title}</h2>
       <p class="detail-intro">${skill.intro || skill.description}</p>
-      <p class="detail-intro">This skill is now backed by a guided shortcut path so learners can follow it from the first lesson to a finished project.</p>
       <div class="detail-meta">
         <span class="meta-pill"><strong>Level:</strong> ${skill.level}</span>
         <span class="meta-pill"><strong>Estimated time:</strong> ${skill.time}</span>
@@ -3213,7 +3239,7 @@ async function handleLoginSubmit(event) {
   const form = event.target;
   const formData = new FormData(form);
   const email = formData.get("email")?.toString().trim() || "";
-  const password = formData.get("password")?.toString().trim() || "";
+  const password = formData.get("password")?.toString() || "";
   const status = document.getElementById("login-status");
   const submit = form.querySelector('button[type="submit"]');
   if (submit) submit.disabled = true;
@@ -3233,52 +3259,178 @@ async function handleLoginSubmit(event) {
   }
 }
 
-async function handleSignupSubmit(event) {
+function getConfirmedPassword(formData) {
+  const password = formData.get("newPassword")?.toString() || "";
+  const confirmation = formData.get("confirmPassword")?.toString() || "";
+  if (password.length < 8) throw new Error("Choose a password with at least 8 characters.");
+  if (password.length > 128) throw new Error("Choose a password with no more than 128 characters.");
+  if (password !== confirmation) throw new Error("The new passwords do not match.");
+  return password;
+}
+
+function getPasswordResetRedirectUrl() {
+  return new URL("/reset-password.html", window.location.origin).href;
+}
+
+async function handleForgotPasswordSubmit(event) {
+  event.preventDefault();
+  const form = event.target;
+  const email = new FormData(form).get("email")?.toString().trim() || "";
+  const status = document.getElementById("forgot-password-status");
+  const submit = form.querySelector('button[type="submit"]');
+  if (submit) submit.disabled = true;
+  try {
+    await backend.sendPasswordReset(email, getPasswordResetRedirectUrl());
+    const message = "If an account exists for that email, a secure reset link is on its way. Check your inbox and spam folder.";
+    if (status) status.textContent = message;
+    showToast(message, "success", 7000);
+    form.reset();
+  } catch (error) {
+    const message = error?.message || "We couldn't send a reset link. Please try again.";
+    if (status) status.textContent = message;
+    showToast(message, "error", 7000);
+  } finally {
+    if (submit) submit.disabled = false;
+  }
+}
+
+async function handleResetPasswordSubmit(event) {
+  event.preventDefault();
+  const form = event.target;
+  const status = document.getElementById("reset-password-status");
+  const submit = form.querySelector('button[type="submit"]');
+  if (submit) submit.disabled = true;
+  try {
+    const session = await backend.getSession();
+    if (!session) throw new Error("Open the latest password-reset email link first, or request a new one.");
+    const password = getConfirmedPassword(new FormData(form));
+    await backend.updatePassword(password);
+    savePendingToast("Your password has been updated.", "success");
+    navigateTo("dashboard.html");
+  } catch (error) {
+    const message = error?.message || "We couldn't update your password. Request a new reset link and try again.";
+    if (status) status.textContent = message;
+    showToast(message, "error", 7000);
+  } finally {
+    if (submit) submit.disabled = false;
+  }
+}
+
+async function handleInvitationCompleteSubmit(event) {
   event.preventDefault();
   const form = event.target;
   const formData = new FormData(form);
-  const name = formData.get("name")?.toString().trim() || "";
-  const email = formData.get("email")?.toString().trim() || "";
-  const password = formData.get("password")?.toString().trim() || "";
-  const bio = formData.get("bio")?.toString().trim() || "";
-  const learnGoals = formData.get("learnGoals")?.toString().trim() || "";
-  const teachGoals = formData.get("teachGoals")?.toString().trim() || "";
-  const role = formData.get("role")?.toString().trim() || "Learner";
-  const status = document.getElementById("signup-status");
+  const status = document.getElementById("complete-invitation-status");
   const submit = form.querySelector('button[type="submit"]');
-
-  if (!name || !email || !password) {
-    if (status) status.textContent = "Please fill in your name, email, and password.";
-    return;
-  }
-
-  if (password.length < 6) {
-    if (status) status.textContent = "Password should be at least 6 characters long.";
-    return;
-  }
-
   if (submit) submit.disabled = true;
   try {
-    const result = await backend.signUp({ name, email, password, bio, learnGoals, teachGoals, role });
-    if (result.session) {
-      const profile = await backend.loadProfile(result.user, skillCatalog);
-      saveCurrentUser(profile);
-      await hydrateUserData(profile.id);
-      savePendingToast("Your account is ready. Welcome to Skillex.", "success");
-      navigateTo("dashboard.html");
-      return;
+    const session = await backend.getSession();
+    const currentUser = getCurrentUser();
+    if (!session || !currentUser) {
+      throw new Error("Open the latest Skillex invitation link first, or request a new invitation.");
     }
-    const message = "Account created. Check your email for a confirmation link before logging in.";
+    const name = formData.get("name")?.toString().trim() || "";
+    if (!name) throw new Error("Enter the name you want shown on your profile.");
+    const password = getConfirmedPassword(formData);
+    const result = await backend.updateProfile(session.user, {
+      name,
+      email: session.user.email || currentUser.email,
+      bio: currentUser.bio || "",
+      learnGoals: currentUser.learnGoals || "",
+      teachGoals: currentUser.teachGoals || ""
+    }, skillCatalog);
+    await backend.updatePassword(password);
+    saveCurrentUser(result.profile);
+    savePendingToast("Your Skillex account is ready.", "success");
+    navigateTo("dashboard.html");
+  } catch (error) {
+    const message = error?.message || "We couldn't complete account setup. Please try the invitation link again.";
+    if (status) status.textContent = message;
+    showToast(message, "error", 7000);
+  } finally {
+    if (submit) submit.disabled = false;
+  }
+}
+
+async function handleSettingsPasswordSubmit(event) {
+  event.preventDefault();
+  const form = event.target;
+  const formData = new FormData(form);
+  const status = document.getElementById("password-change-status");
+  const submit = form.querySelector('button[type="submit"]');
+  if (submit) submit.disabled = true;
+  try {
+    const currentUser = getCurrentUser();
+    const currentPassword = formData.get("currentPassword")?.toString() || "";
+    if (!currentUser?.email) throw new Error("Log in again before changing your password.");
+    if (!currentPassword) throw new Error("Enter your current password to continue.");
+    const password = getConfirmedPassword(formData);
+    await backend.signIn(currentUser.email, currentPassword);
+    await backend.updatePassword(password);
+    form.reset();
+    if (status) status.textContent = "Your password has been changed.";
+    showToast("Your password has been changed.", "success");
+  } catch (error) {
+    const message = error?.message || "We couldn't change your password. Check your current password and try again.";
+    if (status) status.textContent = message;
+    showToast(message, "error", 7000);
+  } finally {
+    if (submit) submit.disabled = false;
+  }
+}
+
+async function handleSettingsPasswordReset() {
+  const status = document.getElementById("password-change-status");
+  const button = document.getElementById("settings-reset-password");
+  try {
+    const currentUser = getCurrentUser();
+    if (!currentUser?.email) throw new Error("Log in again before requesting a password reset.");
+    if (button) button.disabled = true;
+    await backend.sendPasswordReset(currentUser.email, getPasswordResetRedirectUrl());
+    const message = "If your account email can receive mail, a secure password-reset link is on its way.";
     if (status) status.textContent = message;
     showToast(message, "success", 7000);
   } catch (error) {
-    const errorDetail = `${error?.code || ""} ${error?.message || ""}`.toLowerCase();
-    const message = errorDetail.includes("rate limit") || errorDetail.includes("over_email_send_rate_limit")
-      ? "The sign-up email service has reached its sending limit. Please wait before trying again. Configure a custom SMTP sender in Supabase Auth to avoid this recurring."
-      : error?.message || "Unable to create your account. Please try again.";
-    if (status) {
-      status.textContent = message;
-    }
+    const message = error?.message || "We couldn't send a reset link. Please try again.";
+    if (status) status.textContent = message;
+    showToast(message, "error", 7000);
+  } finally {
+    if (button) button.disabled = false;
+  }
+}
+
+async function submitNetlifyForm(form, status, successMessage) {
+  if (!window.location.hostname.endsWith(".netlify.app")) {
+    throw new Error("Form delivery is available on the hosted Skillex site.");
+  }
+  const formData = new FormData(form);
+  formData.set("form-name", form.name);
+  const response = await fetch("/", {
+    method: "POST",
+    headers: { "Content-Type": "application/x-www-form-urlencoded" },
+    body: new URLSearchParams(formData).toString()
+  });
+  if (!response.ok) throw new Error("We couldn't send your message. Please try again or email us directly.");
+  form.reset();
+  if (status) status.textContent = successMessage;
+  showToast(successMessage, "success", 7000);
+}
+
+async function handleAccessRequestSubmit(event) {
+  event.preventDefault();
+  const form = event.target;
+  const status = document.getElementById("access-request-status");
+  const submit = form.querySelector('button[type="submit"]');
+  if (submit) submit.disabled = true;
+  try {
+    await submitNetlifyForm(
+      form,
+      status,
+      "Your request was sent. The Skillex team will reply within 24 hours."
+    );
+  } catch (error) {
+    const message = error?.message || "Unable to send your access request. Please try again.";
+    if (status) status.textContent = message;
     showToast(message, "error", 7000);
   } finally {
     if (submit) submit.disabled = false;
@@ -3295,7 +3447,14 @@ async function handleProfileSubmit(event) {
   const status = document.getElementById("profile-status");
   const currentUser = getCurrentUser();
 
-  if (!currentUser) return;
+  if (!currentUser) {
+    if (status) status.textContent = "Log in before editing your profile.";
+    return;
+  }
+  if (!name || !email) {
+    if (status) status.textContent = "Enter your name and a valid email address.";
+    return;
+  }
   const learnGoals = formData.get("learnGoals")?.toString().trim() || "";
   const teachGoals = formData.get("teachGoals")?.toString().trim() || "";
   const submit = form.querySelector('button[type="submit"]');
@@ -3314,8 +3473,13 @@ async function handleProfileSubmit(event) {
         ? "Profile saved. Check your inbox to confirm the email address change."
         : "Your profile has been updated.";
     }
+    showToast(result.emailChangePending
+      ? "Profile saved. Confirm your new email address to finish the change."
+      : "Your profile has been updated.", "success");
   } catch (error) {
-    if (status) status.textContent = error.message || "Unable to update your profile. Please try again.";
+    const message = error.message || "Unable to update your profile. Please try again.";
+    if (status) status.textContent = message;
+    showToast(message, "error");
   } finally {
     if (submit) submit.disabled = false;
   }
@@ -3323,13 +3487,34 @@ async function handleProfileSubmit(event) {
 
 function attachAuthForms() {
   const loginForm = document.getElementById("login-form");
-  const signupForm = document.getElementById("signup-form");
+  const forgotPasswordForm = document.getElementById("forgot-password-form");
+  const resetPasswordForm = document.getElementById("reset-password-form");
+  const completeInvitationForm = document.getElementById("complete-invitation-form");
+  const accessRequestForm = document.getElementById("access-request-form");
   const profileForm = document.getElementById("profile-form");
+  const settingsForm = document.getElementById("settings-form");
+  const passwordChangeForm = document.getElementById("password-change-form");
   const logoutButton = document.getElementById("logout-btn");
 
   loginForm?.addEventListener("submit", handleLoginSubmit);
-  signupForm?.addEventListener("submit", handleSignupSubmit);
+  forgotPasswordForm?.addEventListener("submit", handleForgotPasswordSubmit);
+  resetPasswordForm?.addEventListener("submit", handleResetPasswordSubmit);
+  completeInvitationForm?.addEventListener("submit", handleInvitationCompleteSubmit);
+  accessRequestForm?.addEventListener("submit", handleAccessRequestSubmit);
   profileForm?.addEventListener("submit", handleProfileSubmit);
+  passwordChangeForm?.addEventListener("submit", handleSettingsPasswordSubmit);
+  document.getElementById("settings-reset-password")?.addEventListener("click", handleSettingsPasswordReset);
+  settingsForm?.addEventListener("change", (event) => {
+    if (event.target.id !== "theme-preference") return;
+    try {
+      setThemePreference(event.target.value);
+      showToast("Appearance preference saved.", "success");
+    } catch (error) {
+      showToast(error.message || "Unable to update appearance.", "error");
+    }
+  });
+  document.getElementById("export-data")?.addEventListener("click", exportUserData);
+  document.getElementById("import-data")?.addEventListener("change", importUserData);
   logoutButton?.addEventListener("click", async () => {
     logoutButton.disabled = true;
     try {
@@ -3352,57 +3537,192 @@ function attachAuthForms() {
       profileForm.querySelector('input[name="teachGoals"]').value = currentUser.teachGoals || "";
     }
   }
+
+  if (completeInvitationForm) {
+    const currentUser = getCurrentUser();
+    const nameInput = completeInvitationForm.querySelector('input[name="name"]');
+    const submit = completeInvitationForm.querySelector('button[type="submit"]');
+    const status = document.getElementById("complete-invitation-status");
+    if (currentUser) {
+      if (nameInput) nameInput.value = currentUser.name || "";
+    } else {
+      if (status) status.textContent = "Open this page from a valid Skillex invitation link to continue.";
+      if (submit) submit.disabled = true;
+    }
+  }
 }
 
-const CONTACT_EMAIL = "aliyujaxuli@gmail.com";
+function exportUserData() {
+  const user = getCurrentUser();
+  if (!user?.id) {
+    showToast("Log in to export your Skillex data.", "error");
+    return;
+  }
+  const backup = {
+    format: "skillex-backup",
+    version: 1,
+    exportedAt: new Date().toISOString(),
+    ownerId: user.id,
+    data: {
+      theme: getThemePreference(),
+      savedSkills: getSavedSkills(),
+      progress: getSkillProgressMap(),
+      savedLessons: getSavedLessons(),
+      recentSkills: getRecentlyViewed(),
+      timeSpent: readStorage(STORAGE_KEYS.timeSpent, {})
+    }
+  };
+  const blob = new Blob([JSON.stringify(backup, null, 2)], { type: "application/json" });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = `skillex-backup-${new Date().toISOString().slice(0, 10)}.json`;
+  link.click();
+  URL.revokeObjectURL(url);
+  showToast("Your Skillex learning backup has been downloaded.", "success");
+}
+
+function validateUserBackup(backup, user) {
+  if (backup?.format !== "skillex-backup" || backup.version !== 1 || backup.ownerId !== user.id) {
+    throw new Error("This backup is invalid or belongs to a different Skillex account.");
+  }
+  const data = backup.data;
+  const knownSkills = new Map(skillCatalog.map((skill) => [skill.id, new Set(skill.lessons)]));
+  if (!data || !["system", "light", "dark"].includes(data.theme)) {
+    throw new Error("The backup has invalid appearance settings.");
+  }
+  const isSkillList = (value) => Array.isArray(value)
+    && value.every((id) => typeof id === "string" && knownSkills.has(id));
+  if (!isSkillList(data.savedSkills) || !isSkillList(data.recentSkills) || !Array.isArray(data.savedLessons)) {
+    throw new Error("The backup contains invalid saved-skill data.");
+  }
+  const savedLessons = [...new Set(data.savedLessons)];
+  for (const key of savedLessons) {
+    if (typeof key !== "string") throw new Error("The backup contains an invalid saved lesson.");
+    const separator = key.indexOf("::");
+    const skillId = key.slice(0, separator);
+    const lessonTitle = key.slice(separator + 2);
+    if (separator < 1 || !knownSkills.get(skillId)?.has(lessonTitle)) {
+      throw new Error("The backup contains a lesson that is not in the Skillex catalog.");
+    }
+  }
+  if (!data.progress || typeof data.progress !== "object" || Array.isArray(data.progress)) {
+    throw new Error("The backup contains invalid learning progress.");
+  }
+  const progress = {};
+  for (const [skillId, entry] of Object.entries(data.progress)) {
+    const lessons = knownSkills.get(skillId);
+    if (!lessons || !entry || typeof entry !== "object" || Array.isArray(entry)) {
+      throw new Error("The backup contains progress for an unknown skill.");
+    }
+    const completedLessons = entry.completedLessons || [];
+    if (!Array.isArray(completedLessons) || !completedLessons.every((title) => lessons.has(title))) {
+      throw new Error("The backup contains an invalid completed lesson.");
+    }
+    if (entry.activeLesson && !lessons.has(entry.activeLesson)) {
+      throw new Error("The backup contains an invalid active lesson.");
+    }
+    if (typeof (entry.notes || "") !== "string" || (entry.notes || "").length > 20000) {
+      throw new Error("The backup contains invalid lesson notes.");
+    }
+    const quizScores = entry.quizScores || {};
+    if (!quizScores || typeof quizScores !== "object" || Array.isArray(quizScores)
+      || Object.values(quizScores).some((score) => typeof score !== "boolean")) {
+      throw new Error("The backup contains invalid quiz results.");
+    }
+    const timeSpentSeconds = entry.timeSpentSeconds || 0;
+    if (!Number.isSafeInteger(timeSpentSeconds) || timeSpentSeconds < 0) {
+      throw new Error("The backup contains an invalid learning-time value.");
+    }
+    progress[skillId] = {
+      completedLessons: [...new Set(completedLessons)],
+      activeLesson: entry.activeLesson || "",
+      notes: entry.notes || "",
+      quizScores,
+      timeSpentSeconds,
+      lastUpdated: Number.isFinite(entry.lastUpdated) ? entry.lastUpdated : Date.now()
+    };
+  }
+  const timeSpent = data.timeSpent || {};
+  if (!timeSpent || typeof timeSpent !== "object" || Array.isArray(timeSpent)
+    || Object.entries(timeSpent).some(([id, seconds]) =>
+      !knownSkills.has(id) || !Number.isSafeInteger(seconds) || seconds < 0
+    )) {
+    throw new Error("The backup contains invalid learning-time data.");
+  }
+  return {
+    theme: data.theme,
+    savedSkills: [...new Set(data.savedSkills)],
+    progress,
+    savedLessons,
+    recentSkills: [...new Set(data.recentSkills)].slice(0, 4),
+    timeSpent
+  };
+}
+
+async function importUserData(event) {
+  const input = event.target;
+  const file = input.files?.[0];
+  if (!file) return;
+  if (file.size > 2 * 1024 * 1024) {
+    showToast("Choose a backup file smaller than 2 MB.", "error");
+    input.value = "";
+    return;
+  }
+  const user = getCurrentUser();
+  if (!user?.id) {
+    showToast("Log in to import your Skillex data.", "error");
+    input.value = "";
+    return;
+  }
+  try {
+    const backup = JSON.parse(await file.text());
+    const data = validateUserBackup(backup, user);
+    if (!window.confirm("Importing this backup replaces saved skills, lesson progress, notes, quiz results, and saved lessons for this account. Continue?")) {
+      return;
+    }
+    await Promise.all([
+      backend.replaceSavedSkills(user.id, data.savedSkills),
+      backend.replaceSavedLessons(user.id, data.savedLessons),
+      backend.replaceLearningProgress(user.id, data.progress)
+    ]);
+    writeStorage(STORAGE_KEYS.savedSkills, data.savedSkills);
+    writeStorage(STORAGE_KEYS.progress, data.progress);
+    writeStorage(STORAGE_KEYS.savedLessons, data.savedLessons);
+    writeStorage(STORAGE_KEYS.recentSkills, data.recentSkills);
+    writeStorage(STORAGE_KEYS.timeSpent, data.timeSpent);
+    setThemePreference(data.theme);
+    showToast("Your backup has been imported and synced to your account.", "success", 7000);
+  } catch (error) {
+    console.error("Skillex data import failed:", error);
+    showToast(error.message || "We couldn't import this backup.", "error", 7000);
+  } finally {
+    input.value = "";
+  }
+}
 
 function attachContactForm() {
   const contactForm = document.querySelector(".contact-form");
   const formStatus = document.querySelector(".form-status");
 
   if (contactForm && !contactForm.id) {
-    contactForm.addEventListener("submit", (event) => {
+    contactForm.addEventListener("submit", async (event) => {
       event.preventDefault();
-
-      const formData = new FormData(contactForm);
-      const name = formData.get("name")?.toString().trim() || "";
-      const email = formData.get("email")?.toString().trim() || "";
-      const subject = formData.get("subject")?.toString().trim() || "";
-      const message = formData.get("message")?.toString().trim() || "";
-
-      if (!name || !email || !subject || !message) {
-        if (formStatus) {
-          formStatus.textContent = "Please fill in every field before sending your message.";
-        }
-        showToast("Please fill in every field before sending your message.", "error");
-        return;
+      const submit = contactForm.querySelector('button[type="submit"]');
+      if (submit) submit.disabled = true;
+      try {
+        await submitNetlifyForm(
+          contactForm,
+          formStatus,
+          "Your message was sent. We’ll reply to the email address you provided."
+        );
+      } catch (error) {
+        const message = error?.message || "Unable to send your message. Please try again.";
+        if (formStatus) formStatus.textContent = message;
+        showToast(message, "error");
+      } finally {
+        if (submit) submit.disabled = false;
       }
-
-      if (!email.includes("@") || !email.includes(".")) {
-        if (formStatus) {
-          formStatus.textContent = "Please enter a valid email address.";
-        }
-        showToast("Please enter a valid email address.", "error");
-        return;
-      }
-
-      // Open the visitor's email app with everything pre-filled, addressed to you.
-      const mailBody = `${message}\n\n— ${name} (${email})`;
-      const mailtoUrl = `mailto:${CONTACT_EMAIL}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(mailBody)}`;
-      const emailLink = document.createElement("a");
-      emailLink.href = mailtoUrl;
-      emailLink.style.display = "none";
-      document.body.append(emailLink);
-      emailLink.click();
-      emailLink.remove();
-
-      const statusMessage = "Your email app should open with the message ready to send.";
-      if (formStatus) {
-        formStatus.textContent = statusMessage;
-      }
-      showToast(statusMessage, "success");
-
-      contactForm.reset();
     });
   }
 }
@@ -3439,9 +3759,12 @@ function attachSwapPage() {
   }
   form.addEventListener("submit", (event) => {
     event.preventDefault();
-    if (learnSelect.value === teachSelect.value) { status.textContent = "Choose two different skills so the exchange is fair."; return; }
+    if (!learnSelect.value || !teachSelect.value) {
+      status.textContent = "Choose a skill to learn and a skill to share.";
+      return;
+    }
     renderSwapMatches(learnSelect.value, teachSelect.value, new FormData(form).get("message"));
-    status.textContent = "Here are peers with complementary skills. Send a request when you find the right fit.";
+    status.textContent = "Matches with a shared skill are shown first, with two-way exchanges ranked highest.";
   });
   renderSwapRequests();
 }
@@ -3458,22 +3781,17 @@ function renderSwapMatches(learnSkill, teachSkill, message) {
   }
   target.innerHTML = `<p class="status-pill">Searching Skillex members…</p>`;
   backend.loadMatches(currentUser.id).then((entries) => {
-    const peers = new Map();
-    entries.forEach((entry) => {
-      if (!peers.has(entry.user_id)) peers.set(entry.user_id, { id: entry.user_id, name: entry.name, bio: entry.bio, teaches: [], learns: [] });
-      peers.get(entry.user_id)[entry.intent === "teach" ? "teaches" : "learns"].push(entry.skill_id);
-    });
-    const matches = [...peers.values()].filter((peer) =>
-      peer.teaches.includes(learnSkillId) || peer.learns.includes(teachSkillId)
-    );
+    const matches = backend.rankMatches(entries, learnSkillId, teachSkillId);
     if (!matches.length) {
-      target.innerHTML = `<p class="status-pill">No matching members found yet. Add your skills to your profile and check again later.</p>`;
+      target.innerHTML = `<p class="status-pill">No members share either selected skill yet. Add your skills to your profile and check again later.</p>`;
       return;
     }
     target.innerHTML = matches.map((peer) => `
       <article class="skill-card">
         <div class="skill-card__top"><h3>${escapeHTML(peer.name)}</h3></div>
         <p>${escapeHTML(peer.bio || "Skillex member")}</p>
+        <p><strong>${peer.score === 3 ? "Strong exchange match" : peer.score === 2 ? "Skill exchange match" : "Shared skill match"}</strong></p>
+        <p>Skills in common: ${peer.matchedSkills.map((id) => escapeHTML(getSkillById(id)?.title || id)).join(", ")}</p>
         <p>Skills offered: ${peer.teaches.map((id) => escapeHTML(getSkillById(id)?.title || id)).join(", ") || "Not specified"}</p>
         <p>Wants to learn: ${peer.learns.map((id) => escapeHTML(getSkillById(id)?.title || id)).join(", ") || "Not specified"}</p>
         <div class="skill-card__actions"><button class="btn btn-small send-swap-btn" data-peer="${escapeHTML(peer.id)}" data-learn="${escapeHTML(learnSkillId)}" data-teach="${escapeHTML(teachSkillId)}" type="button">Send swap request</button></div>
@@ -3558,22 +3876,22 @@ function saveJoinedCommunities(list) { writeStorage(STORAGE_KEYS.communities, li
 function getDiscussions() { return readStorage(STORAGE_KEYS.discussions, []); }
 function saveDiscussions(list) { writeStorage(STORAGE_KEYS.discussions, list); }
 
-const communityData = [
-  { skill: "HTML & CSS", focus: "Build accessible pages, share portfolio feedback, and practise responsive layouts.", group: "Saturday Build Lab" },
-  { skill: "JavaScript", focus: "Debug together, discuss DOM patterns, and review small app projects.", group: "Tuesday Code Circle" },
-  { skill: "Python", focus: "Solve practical automation and data problems in a supportive study group.", group: "Python Problem Club" },
-  { skill: "UI/UX Design", focus: "Share case studies, critique flows, and improve product thinking.", group: "Portfolio Review Studio" },
-  { skill: "Public Speaking", focus: "Practise short talks, receive constructive feedback, and build confidence.", group: "Friday Speaker Practice" },
-  { skill: "Entrepreneurship", focus: "Validate ideas, discuss customer interviews, and learn from student founders.", group: "Startup Idea Sprint" }
-];
+const communityData = skillCatalog.map((skill) => ({
+  id: skill.id,
+  skill: skill.title,
+  focus: skill.description
+}));
 
 function attachProfileImage() {
   const input = document.getElementById("profile-photo-input");
   const preview = document.getElementById("profile-photo-preview");
+  const chooseButton = document.getElementById("choose-profile-photo");
+  const uploadStatus = document.getElementById("profile-photo-status");
   if (!input || !preview) return;
   const user = getCurrentUser();
   const fallback = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='96' height='96'%3E%3Crect width='100%25' height='100%25' fill='%23176b56'/%3E%3Ctext x='50%25' y='58%25' text-anchor='middle' font-family='Arial' font-size='34' fill='white'%3EYou%3C/text%3E%3C/svg%3E";
   preview.src = user?.avatarUrl || fallback;
+  chooseButton?.addEventListener("click", () => input.click());
   if (user?.avatarPath) {
     backend.getAvatarUrl(user.avatarPath).then((url) => {
       preview.src = url;
@@ -3597,17 +3915,27 @@ function attachProfileImage() {
       input.value = "";
       return;
     }
+    const previewUrl = URL.createObjectURL(file);
+    preview.src = previewUrl;
+    if (uploadStatus) uploadStatus.textContent = "Uploading your profile photo…";
     input.disabled = true;
+    if (chooseButton) chooseButton.disabled = true;
     try {
       const current = getCurrentUser();
       const avatarPath = await backend.uploadAvatar(current.id, file, current.avatarPath);
       const avatarUrl = await backend.getAvatarUrl(avatarPath);
       preview.src = avatarUrl;
       saveCurrentUser({ ...current, avatarPath, avatarUrl });
+      if (uploadStatus) uploadStatus.textContent = "Profile photo updated.";
+      showToast("Profile photo updated.", "success");
     } catch (error) {
+      preview.src = getCurrentUser()?.avatarUrl || fallback;
+      if (uploadStatus) uploadStatus.textContent = error.message || "Unable to upload this photo.";
       reportBackendError(error, "update your profile photo");
     } finally {
+      URL.revokeObjectURL(previewUrl);
       input.disabled = false;
+      if (chooseButton) chooseButton.disabled = false;
     }
   });
 }
@@ -3615,11 +3943,67 @@ function attachProfileImage() {
 function renderCommunities() {
   const container = document.getElementById("community-list");
   if (!container) return;
-  const joined = getJoinedCommunities();
-  const render = (items) => { container.innerHTML = items.map((community) => `<article class="skill-card"><div class="skill-card__top"><h3>${escapeHTML(community.skill)} Community</h3><span class="pill">${joined.includes(community.skill) ? "Joined" : "Open community"}</span></div><p>${escapeHTML(community.focus)}</p><div class="match-meta"><span class="meta-pill">${escapeHTML(community.group)}</span><span class="meta-pill">Peer mentors</span></div><div class="skill-card__actions"><button class="btn btn-small join-community" data-skill="${escapeHTML(community.skill)}" type="button">${joined.includes(community.skill) ? "Joined" : "Join community"}</button><a class="btn btn-secondary btn-small" href="swap.html">Request mentor</a></div></article>`).join(""); container.querySelectorAll(".join-community").forEach((button) => button.addEventListener("click", () => { const skill = button.dataset.skill; const current = getJoinedCommunities(); if (!current.includes(skill)) { current.push(skill); saveJoinedCommunities(current); } renderCommunities(); renderCommunityDashboard(); })); };
-  render(communityData);
   const search = document.getElementById("community-search");
-  search?.addEventListener("input", () => { const term = search.value.toLowerCase(); render(communityData.filter((item) => `${item.skill} ${item.focus} ${item.group}`.toLowerCase().includes(term))); });
+  const user = getCurrentUser();
+  let memberEntries = null;
+  let memberLoadFailed = false;
+  const render = () => {
+    const term = search?.value.trim().toLowerCase() || "";
+    const items = communityData.filter((item) => `${item.skill} ${item.focus}`.toLowerCase().includes(term));
+    container.innerHTML = items.map((community) => {
+      const members = memberEntries === null
+        ? null
+        : (() => {
+          const memberIds = new Set(memberEntries
+            .filter((entry) => entry.skill_id === community.id)
+            .map((entry) => entry.user_id));
+          const ownSkills = `${user?.learnGoals || ""},${user?.teachGoals || ""}`
+            .split(/[,;\n]/)
+            .map((skill) => findSkillId(skill));
+          if (ownSkills.includes(community.id)) memberIds.add(user.id);
+          return memberIds.size;
+        })();
+      const memberMessage = memberLoadFailed
+        ? "Member information is unavailable right now."
+        : members === null
+          ? "Sign in to discover learners sharing this skill."
+          : members === 0
+            ? "No users yet. Start your own group by posting the first question."
+            : `${members} member${members === 1 ? "" : "s"} share this skill.`;
+      return `
+        <article class="skill-card">
+          <div class="skill-card__top"><h3>${escapeHTML(community.skill)} Community</h3></div>
+          <p>${escapeHTML(community.focus)}</p>
+          <p class="community-members" aria-live="polite">${memberMessage}</p>
+          <div class="skill-card__actions">
+            <button class="btn btn-small" data-start-community="${escapeHTML(community.skill)}" type="button">Start your own</button>
+            <a class="btn btn-secondary btn-small" href="swap.html">Find learners</a>
+          </div>
+        </article>`;
+    }).join("") || `<p class="status-pill">No communities match that search. Try another skill.</p>`;
+  };
+
+  search?.addEventListener("input", render);
+  container.addEventListener("click", (event) => {
+    const button = event.target.closest("[data-start-community]");
+    if (!button) return;
+    const select = document.getElementById("discussion-skill");
+    const postField = document.querySelector('#discussion-form textarea[name="post"]');
+    if (select) select.value = button.dataset.startCommunity;
+    document.getElementById("discussion-form")?.scrollIntoView({ behavior: "smooth", block: "center" });
+    postField?.focus({ preventScroll: true });
+  });
+  render();
+  render();
+  if (!user?.id) return;
+  backend.loadMatches(user.id).then((entries) => {
+    memberEntries = entries;
+    render();
+  }).catch((error) => {
+    reportBackendError(error, "load community members");
+    memberLoadFailed = true;
+    render();
+  });
 }
 
 function attachDiscussionForm() {
@@ -3628,13 +4012,13 @@ function attachDiscussionForm() {
   const select = document.getElementById("discussion-skill");
   select.innerHTML = communityData.map((community) => `<option value="${escapeHTML(community.skill)}">${escapeHTML(community.skill)} Community</option>`).join("");
   const renderPosts = () => { const box = document.getElementById("discussion-list"); const posts = getDiscussions(); box.innerHTML = posts.length ? posts.map((post) => `<article class="swap-request"><strong>${escapeHTML(post.author)}</strong><span class="status-pill">${escapeHTML(post.skill)}</span><p>${escapeHTML(post.text)}</p></article>`).join("") : `<p class="status-pill">No posts yet. Start the discussion with a focused question.</p>`; };
-  form.addEventListener("submit", (event) => { event.preventDefault(); const text = new FormData(form).get("post")?.toString().trim(); if (!text) return; const user = getCurrentUser(); const posts = getDiscussions(); posts.unshift({ author: user?.name || "Skillex learner", skill: select.value, text, createdAt: Date.now() }); saveDiscussions(posts.slice(0, 20)); form.reset(); document.getElementById("discussion-status").textContent = "Your post is live in the community."; renderPosts(); });
+  form.addEventListener("submit", (event) => { event.preventDefault(); const text = new FormData(form).get("post")?.toString().trim(); if (!text) return; const user = getCurrentUser(); const posts = getDiscussions(); posts.unshift({ author: user?.name || "Skillex learner", skill: select.value, text, createdAt: Date.now() }); saveDiscussions(posts.slice(0, 20)); form.reset(); document.getElementById("discussion-status").textContent = "Saved in this browser. This post is not shared with other members yet."; renderPosts(); });
   renderPosts();
 }
 
 function renderCommunityDashboard() {
   const communities = document.getElementById("dashboard-communities");
-  if (communities) { const joined = getJoinedCommunities(); communities.innerHTML = joined.length ? `<div class="badge-list">${joined.map((skill) => `<div class="badge-item">${escapeHTML(skill)} Community</div>`).join("")}</div><p class="detail-actions"><a class="btn btn-small" href="communities.html">Explore groups</a></p>` : `<p>Join a focused community and study group.</p><a class="btn btn-small" href="communities.html">Explore communities</a>`; }
+  if (communities) communities.innerHTML = `<p>Explore skill groups and start a discussion.</p><a class="btn btn-small" href="communities.html">Explore communities</a>`;
   const certificates = document.getElementById("dashboard-certificates");
   if (certificates) { const complete = skillCatalog.filter((skill) => getSkillProgressPercent(skill.id) === 100); certificates.innerHTML = complete.length ? `<p>${complete.length} course certificate${complete.length > 1 ? "s" : ""} earned.</p><div class="badge-list">${complete.map((skill) => `<div class="badge-item">${escapeHTML(skill.title)} — Certified</div>`).join("")}</div>` : `<p>Complete a course to unlock a certificate and begin your mentor path.</p><a class="btn btn-small" href="browse.html">Continue learning</a>`; }
 }
@@ -3647,6 +4031,9 @@ function findSkillId(value) {
 }
 
 async function hydrateUserData(userId) {
+  const cached = window.__SKILLEX_USER_DATA_CACHE;
+  if (cached?.userId === userId && cached.expiresAt > Date.now()) return cached.state;
+
   const state = await backend.loadUserData(userId, skillCatalog);
   writeStorage(STORAGE_KEYS.savedSkills, state.saved);
   writeStorage(STORAGE_KEYS.progress, state.progress);
@@ -3655,6 +4042,11 @@ async function hydrateUserData(userId) {
   writeStorage(STORAGE_KEYS.timeSpent, Object.fromEntries(
     Object.entries(state.progress).map(([skillId, progress]) => [skillId, progress.timeSpentSeconds || 0])
   ));
+  window.__SKILLEX_USER_DATA_CACHE = {
+    userId,
+    state,
+    expiresAt: Date.now() + 15000
+  };
   return state;
 }
 
@@ -3705,8 +4097,23 @@ async function initializeApp() {
       .filter((user) => user && typeof user === "object")
       .map(({ password, ...user }) => user));
   }
+  const clearAuthCallbackUrl = () => {
+    const routeUrl = window.SKILLEX_ROUTE_URL;
+    const callbackParams = new URLSearchParams(routeUrl?.search || window.location.search);
+    new URLSearchParams((routeUrl?.hash || window.location.hash).replace(/^#/, ""))
+      .forEach((value, key) => callbackParams.set(key, value));
+    if (["access_token", "refresh_token", "error", "error_description", "code"]
+      .some((key) => callbackParams.has(key))) {
+      history.replaceState(
+        { skillexRoute: `${routeUrl?.pathname || window.location.pathname}${routeUrl?.search || ""}` },
+        "",
+        window.location.origin
+      );
+    }
+  };
   try {
     const session = await backend.getSession();
+    clearAuthCallbackUrl();
     if (!session) {
       saveCurrentUser(null);
     } else {
@@ -3716,11 +4123,7 @@ async function initializeApp() {
   } catch (error) {
     reportBackendError(error, "connect to Skillex");
     saveCurrentUser(null);
-  }
-
-  const routeHash = window.SKILLEX_ROUTE_URL?.hash || window.location.hash;
-  if (routeHash && /^(?:#access_token=|#error=|#error_description=)/.test(routeHash)) {
-    history.replaceState({ skillexRoute: `${window.SKILLEX_ROUTE_URL.pathname}${window.SKILLEX_ROUTE_URL.search}` }, "", window.location.origin);
+    clearAuthCallbackUrl();
   }
 
   if (!ensureProtectedAccess()) return;

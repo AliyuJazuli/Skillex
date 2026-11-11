@@ -2,7 +2,23 @@
   const routeKey = "skillex-current-route";
   const pathname = window.location.pathname;
   const isDirectPage = pathname !== "/" && pathname.endsWith(".html");
-  let route = isDirectPage ? `${pathname}${window.location.search}${window.location.hash}` : null;
+  const initialUrl = new URL(window.location.href);
+  const authParams = new URLSearchParams(initialUrl.search);
+  new URLSearchParams(initialUrl.hash.slice(1)).forEach((value, key) => authParams.set(key, value));
+  const authType = authParams.get("type");
+  const isAuthCallback = (url) => {
+    const params = new URLSearchParams(url.search);
+    new URLSearchParams(url.hash.slice(1)).forEach((value, key) => params.set(key, value));
+    return params.has("access_token") || params.has("refresh_token") || params.has("code")
+      || params.has("error") || params.has("error_description");
+  };
+  let route = isDirectPage
+    ? `${pathname}${window.location.search}${window.location.hash}`
+    : authType === "invite"
+      ? `/complete-profile.html${window.location.search}${window.location.hash}`
+      : authType === "recovery"
+        ? `/reset-password.html${window.location.search}${window.location.hash}`
+        : null;
 
   if (!route) {
     try {
@@ -17,10 +33,29 @@
   if (isDirectPage) {
     try {
       sessionStorage.setItem(routeKey, route);
-      history.replaceState({ skillexRoute: route }, "", window.location.origin);
+      if (!isAuthCallback(initialUrl)) {
+        history.replaceState({ skillexRoute: route }, "", window.location.origin);
+      }
     } catch (error) {
       console.error("Could not normalize the Skillex page address:", error);
     }
+  }
+
+  const navigationLoader = document.createElement("div");
+  navigationLoader.className = "navigation-loader";
+  navigationLoader.setAttribute("role", "status");
+  navigationLoader.setAttribute("aria-live", "polite");
+  navigationLoader.setAttribute("aria-hidden", "true");
+  navigationLoader.innerHTML = `
+    <span class="navigation-loader__spinner" aria-hidden="true"></span>
+    <span>Loading Skillex</span>
+  `;
+  document.body.append(navigationLoader);
+
+  function setNavigationLoading(isLoading) {
+    navigationLoader.dataset.visible = String(isLoading);
+    navigationLoader.setAttribute("aria-hidden", String(!isLoading));
+    document.body.toggleAttribute("aria-busy", isLoading);
   }
 
   function loadScripts(documentToRender) {
@@ -44,28 +79,67 @@
     }), Promise.resolve());
   }
 
+  async function replaceHead(nextDocument) {
+    const stylesheetKey = (link) => {
+      const href = link.getAttribute("href");
+      return href ? new URL(href, window.location.href).href : null;
+    };
+    const existingStylesheets = new Map(
+      [...document.head.querySelectorAll('link[rel~="stylesheet"]')]
+        .map((link) => [stylesheetKey(link), link])
+        .filter(([href]) => href)
+    );
+    const nextStylesheets = new Map(existingStylesheets);
+
+    for (const sourceLink of nextDocument.head.querySelectorAll('link[rel~="stylesheet"]')) {
+      const href = stylesheetKey(sourceLink);
+      if (!href || nextStylesheets.has(href)) continue;
+
+      const link = sourceLink.cloneNode(true);
+      if (new URL(href).origin === window.location.origin) {
+        await new Promise((resolve, reject) => {
+          link.addEventListener("load", resolve, { once: true });
+          link.addEventListener("error", () => reject(new Error(`Could not load stylesheet ${href}.`)), { once: true });
+          document.head.append(link);
+        });
+      }
+      nextStylesheets.set(href, link);
+    }
+
+    const headNodes = [...nextDocument.head.childNodes].map((node) => {
+      if (node.nodeType === Node.ELEMENT_NODE && node.matches('link[rel~="stylesheet"]')) {
+        return nextStylesheets.get(stylesheetKey(node)) || node.cloneNode(true);
+      }
+      return node.cloneNode(true);
+    });
+    document.head.replaceChildren(...headNodes);
+  }
+
   function renderQuickNavigation() {
     const siteHeader = document.querySelector(".site-header");
     if (!siteHeader) return;
-    document.querySelector(".quick-nav")?.remove();
-
-    const quickNav = document.createElement("div");
-    quickNav.className = "quick-nav";
-    quickNav.innerHTML = `
-      <div class="container">
-        <nav class="quick-nav__links" aria-label="Main navigation">
-          <a class="quick-nav__link" href="index.html"><svg aria-hidden="true" viewBox="0 0 24 24"><path d="m3 10 9-7 9 7v10a1 1 0 0 1-1 1h-5v-7H9v7H4a1 1 0 0 1-1-1z"/></svg><span>Home</span></a>
-          <a class="quick-nav__link" href="browse.html"><svg aria-hidden="true" viewBox="0 0 24 24"><circle cx="10.8" cy="10.8" r="6.8"/><path d="m16 16 5 5"/></svg><span>Browse</span></a>
-          <a class="quick-nav__link" href="dashboard.html"><svg aria-hidden="true" viewBox="0 0 24 24"><rect x="3" y="3" width="8" height="8" rx="1.5"/><rect x="13" y="3" width="8" height="5" rx="1.5"/><rect x="13" y="10" width="8" height="11" rx="1.5"/><rect x="3" y="13" width="8" height="8" rx="1.5"/></svg><span>Dashboard</span></a>
-          <a class="quick-nav__link" href="swap.html"><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M4 7h15l-3-3M20 17H5l3 3"/></svg><span>Swap</span></a>
-          <a class="quick-nav__link" href="communities.html"><svg aria-hidden="true" viewBox="0 0 24 24"><circle cx="9" cy="8" r="3"/><path d="M3 20v-1a6 6 0 0 1 12 0v1zm13-9a3 3 0 1 0-1-5.8M18 14a5 5 0 0 1 3 4.6v1"/></svg><span>Community</span></a>
-          <a class="quick-nav__link" href="saved-skills.html"><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M6 4a1 1 0 0 1 1-1h10a1 1 0 0 1 1 1v17l-6-4-6 4z"/></svg><span>Saved</span></a>
-          <a class="quick-nav__link" href="about.html"><svg aria-hidden="true" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 11v5m0-9h.01"/></svg><span>About</span></a>
-          <a class="quick-nav__link" href="contact.html"><svg aria-hidden="true" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="m4 7 8 6 8-6"/></svg><span>Contact</span></a>
-        </nav>
-      </div>
-    `;
-    siteHeader.insertAdjacentElement("afterend", quickNav);
+    let quickNav = document.querySelector(".quick-nav");
+    if (!quickNav) {
+      quickNav = document.createElement("div");
+      quickNav.className = "quick-nav";
+      quickNav.innerHTML = `
+        <div class="container">
+          <nav class="quick-nav__links" aria-label="Main navigation">
+            <a class="quick-nav__link" href="index.html"><svg aria-hidden="true" viewBox="0 0 24 24"><path d="m3 10 9-7 9 7v10a1 1 0 0 1-1 1h-5v-7H9v7H4a1 1 0 0 1-1-1z"/></svg><span>Home</span></a>
+            <a class="quick-nav__link" href="browse.html"><svg aria-hidden="true" viewBox="0 0 24 24"><circle cx="10.8" cy="10.8" r="6.8"/><path d="m16 16 5 5"/></svg><span>Browse</span></a>
+            <a class="quick-nav__link" href="dashboard.html"><svg aria-hidden="true" viewBox="0 0 24 24"><rect x="3" y="3" width="8" height="8" rx="1.5"/><rect x="13" y="3" width="8" height="5" rx="1.5"/><rect x="13" y="10" width="8" height="11" rx="1.5"/><rect x="3" y="13" width="8" height="8" rx="1.5"/></svg><span>Dashboard</span></a>
+            <a class="quick-nav__link" href="swap.html"><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M4 7h15l-3-3M20 17H5l3 3"/></svg><span>Swap</span></a>
+            <a class="quick-nav__link" href="communities.html"><svg aria-hidden="true" viewBox="0 0 24 24"><circle cx="9" cy="8" r="3"/><path d="M3 20v-1a6 6 0 0 1 12 0v1zm13-9a3 3 0 1 0-1-5.8M18 14a5 5 0 0 1 3 4.6v1"/></svg><span>Community</span></a>
+            <a class="quick-nav__link" href="saved-skills.html"><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M6 4a1 1 0 0 1 1-1h10a1 1 0 0 1 1 1v17l-6-4-6 4z"/></svg><span>Saved</span></a>
+            <a class="quick-nav__link" href="about.html"><svg aria-hidden="true" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 11v5m0-9h.01"/></svg><span>About</span></a>
+            <a class="quick-nav__link" href="contact.html"><svg aria-hidden="true" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="m4 7 8 6 8-6"/></svg><span>Contact</span></a>
+          </nav>
+        </div>
+      `;
+      siteHeader.insertAdjacentElement("afterend", quickNav);
+    } else if (quickNav.previousElementSibling !== siteHeader) {
+      siteHeader.insertAdjacentElement("afterend", quickNav);
+    }
 
     const currentPage = window.SKILLEX_ROUTE_URL.pathname.split("/").pop() || "index.html";
     quickNav.querySelectorAll(".quick-nav__link").forEach((link) => {
@@ -73,21 +147,31 @@
       if (currentPage === targetPage) {
         link.classList.add("active");
         link.setAttribute("aria-current", "page");
+      } else {
+        link.classList.remove("active");
+        link.removeAttribute("aria-current");
       }
     });
   }
 
   async function renderPage(html, target) {
     const nextDocument = new DOMParser().parseFromString(html, "text/html");
+    const quickNavigation = document.querySelector(".quick-nav");
+    const bodyNodes = [...nextDocument.body.childNodes].map((node) => node.cloneNode(true));
     document.title = nextDocument.title;
     document.documentElement.lang = nextDocument.documentElement.lang || "en";
-    document.head.replaceChildren(...[...nextDocument.head.childNodes].map((node) => node.cloneNode(true)));
-    document.body.replaceChildren(...[...nextDocument.body.childNodes].map((node) => node.cloneNode(true)));
+    await replaceHead(nextDocument);
+    document.body.replaceChildren(...bodyNodes, navigationLoader);
     document.body.classList.toggle("dark", document.documentElement.classList.contains("dark"));
     window.SKILLEX_ROUTE_URL = target;
+    if (quickNavigation) {
+      document.querySelector(".site-header")?.insertAdjacentElement("afterend", quickNavigation);
+    }
     renderQuickNavigation();
     await loadScripts(nextDocument);
   }
+
+  let navigationSequence = 0;
 
   async function navigate(url, historyMode = "push") {
     const target = new URL(url, window.location.origin);
@@ -96,11 +180,16 @@
       return;
     }
 
+    if (target.href === window.SKILLEX_ROUTE_URL.href) return;
+
+    const sequence = ++navigationSequence;
     const routePath = `${target.pathname}${target.search}${target.hash}`;
+    setNavigationLoading(true);
     try {
       const response = await fetch(routePath, { headers: { "X-Skillex-Navigation": "1" } });
       if (!response.ok) throw new Error(`Page request failed (${response.status}).`);
       const html = await response.text();
+      if (sequence !== navigationSequence) return;
       try {
         sessionStorage.setItem(routeKey, routePath);
       } catch (error) {
@@ -108,13 +197,17 @@
       }
       if (historyMode === "push") {
         history.pushState({ skillexRoute: routePath }, "", window.location.origin);
-      } else if (historyMode === "replace") {
+      } else if (historyMode === "replace" && !isAuthCallback(target)) {
         history.replaceState({ skillexRoute: routePath }, "", window.location.origin);
       }
       await renderPage(html, target);
     } catch (error) {
-      console.error("Skillex page navigation failed:", error);
-      window.SkillexShowToast?.("This page could not be loaded. Please try again.", "error");
+      if (sequence === navigationSequence) {
+        console.error("Skillex page navigation failed:", error);
+        window.SkillexShowToast?.("This page could not be loaded. Please try again.", "error");
+      }
+    } finally {
+      if (sequence === navigationSequence) setNavigationLoading(false);
     }
   }
 

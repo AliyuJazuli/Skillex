@@ -15,6 +15,7 @@ Skillex is a peer-learning platform for discovering skills, following guided les
 - Save skills and lessons to revisit later.
 - Create a profile, set learning and teaching goals, and find peers.
 - Send and manage skill-exchange requests.
+- Request access, finish an invited account, and recover or change a password.
 - Use responsive public pages and installable app assets.
 
 ## Technology
@@ -47,7 +48,11 @@ The SQL migrations in `supabase/migrations/` must be run, in filename order, aga
 
 The first migration creates the schema, storage bucket, and row-level security policies. The second adds learning fields and all 17 catalog entries. The third adds the authored, detailed lesson material for the eight fully curated courses. The remaining catalog entries retain their existing in-app learning paths. Do not run these migrations against another Supabase project.
 
-In Supabase Auth settings, enable the email provider, set the Site URL to `https://skillex-hydev.netlify.app`, and allow that exact origin as a redirect URL. Keep email confirmation enabled for production. Supabase's default email sender has strict limits; configure a custom SMTP sender in Auth email settings for reliable production sign-up and password recovery. Profile avatars are private and use signed URLs.
+In Supabase Auth settings, keep the email provider enabled, **disable public sign-ups**, set the Site URL to `https://skillex-hydev.netlify.app`, and allow the site origin plus `/complete-profile.html` and `/reset-password.html` as redirect URLs. Public sign-ups are disabled in the dedicated Skillex project. Review access requests, then invite approved users from that project's Auth Users page; the public request form never creates an account. Invitees finish setup at `complete-profile.html`. Keep email confirmation enabled.
+
+Supabase's default email sender only delivers to pre-authorized team addresses and is heavily rate-limited. Configure custom SMTP before sending invitations or password resets to arbitrary users. Use `hydeveco@gmail.com` as the sender only if the SMTP provider authorizes it; keep SMTP credentials out of the browser and repository. The invite and reset email templates can be branded in the Supabase Auth email-template settings.
+
+The site uses Netlify Forms for account-access requests and contact messages. Access requests tell users the team will reply within 24 hours. Form detection is enabled, and email notifications for any form are configured for `aliyujaxuli@gmail.com` and `hydeveco@gmail.com`; the HYDEV recipient must confirm its notification. After deploying a build that contains these forms, confirm that Netlify detected them and both notifications are active.
 
 ## Tests
 
@@ -59,7 +64,7 @@ node --check js/script.js
 node --check js/backend.js
 ```
 
-See [APP_README.md](APP_README.md) for user-facing behavior, setup details, and release checks.
+See [APP_README.md](APP_README.md) for user-facing behavior, setup details, and release checks. Signed-in members can configure the system/light/dark appearance, change their password, and import or export account-bound learning data from `settings.html`. New visitors can request access at `signup.html`; that request is not an account creation.
 
 ## Project structure
 
