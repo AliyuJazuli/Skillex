@@ -48,6 +48,14 @@ function createQueryClient(responses = {}) {
           this.filters.push(["in", column, values]);
           return this;
         },
+        or(expression) {
+          this.filters.push(["or", expression]);
+          return this;
+        },
+        order(column, options) {
+          this.orderBy = [column, options];
+          return this;
+        },
         delete() {
           this.operation = "delete";
           return this;
@@ -87,6 +95,8 @@ test("public onboarding requests access instead of creating an account", () => {
   const app = fs.readFileSync(path.join(root, "js", "script.js"), "utf8");
   assert.match(requestPage, /name="account-access-request" method="POST" data-netlify="true"/);
   assert.match(requestPage, /name="privacy-consent" value="accepted" required/);
+  assert.match(requestPage, /name="terms-consent" value="accepted" required/);
+  assert.match(requestPage, /href="terms\.html"/);
   assert.match(app, /function handleAccessRequestSubmit\(event\)/);
   assert.doesNotMatch(app, /backend\.signUp/);
 });
@@ -108,6 +118,50 @@ test("match ranking includes any shared selected skill and prioritizes reciproca
     { id: "one-way", score: 2, matchedSkills: ["python"] },
     { id: "shared-only", score: 1, matchedSkills: ["python"] }
   ]);
+});
+
+test("exchange request notifications load only the signed-in member's requests and peer names", async () => {
+  const { client, calls } = createQueryClient({
+    swap_requests: {
+      select: {
+        data: [{
+          id: "request-1",
+          requester_id: "member-1",
+          receiver_id: "peer-1",
+          learn_skill_id: "python",
+          teach_skill_id: "design",
+          message: "Let's exchange.",
+          status: "requested",
+          created_at: "2026-11-11T12:00:00Z"
+        }],
+        error: null
+      }
+    },
+    profiles: { select: { data: [{ id: "peer-1", display_name: "Rae" }], error: null } }
+  });
+  const backend = createBackend(client);
+
+  const requests = await backend.loadSwapRequests("member-1", [
+    { id: "python", title: "Python" },
+    { id: "design", title: "Design" }
+  ]);
+
+  assert.deepEqual(JSON.parse(JSON.stringify(requests)), [{
+    id: "request-1",
+    requesterId: "member-1",
+    receiverId: "peer-1",
+    peerId: "peer-1",
+    peerName: "Rae",
+    learnSkill: "Python",
+    teachSkill: "Design",
+    learnSkillId: "python",
+    teachSkillId: "design",
+    message: "Let's exchange.",
+    status: "requested",
+    createdAt: "2026-11-11T12:00:00Z"
+  }]);
+  assert.ok(calls.some((call) => call.table === "swap_requests"
+    && call.filters?.some(([, expression]) => expression === "requester_id.eq.member-1,receiver_id.eq.member-1")));
 });
 
 test("backend operations surface Supabase errors", async () => {
@@ -227,7 +281,8 @@ test("site pages consistently load the backend and use the Skillex origin", () =
   assert.match(homepage, /href="signup\.html" class="btn">Request access/);
 
   const contact = fs.readFileSync(path.join(root, "contact.html"), "utf8");
-  assert.match(contact, /aliyujaxuli@gmail\.com/);
+  assert.match(contact, /name="contact"/);
+  assert.doesNotMatch(contact, /aliyujaxuli@gmail\.com|hydeveco@gmail\.com|mailto:/);
 
   const app = fs.readFileSync(path.join(root, "js", "script.js"), "utf8");
   assert.match(app, /function showToast\(/);
@@ -240,6 +295,11 @@ test("site pages consistently load the backend and use the Skillex origin", () =
   assert.match(app, /function exportUserData\(\)/);
   assert.match(app, /function validateUserBackup\(backup, user\)/);
   assert.match(app, /function submitNetlifyForm\(form, status, successMessage\)/);
+  assert.match(app, /function attachFormDrafts\(\)/);
+  assert.match(app, /sessionStorage\.setItem\(getFormDraftKey\(form\)/);
+  assert.match(app, /function initializeSwapNotifications\(\)/);
+  assert.match(app, /setInterval\(refreshSwapNotifications, 60000\)/);
+  assert.match(app, /function updateSwapRequestBadge\(requests\)/);
   assert.match(app, /window\.__SKILLEX_USER_DATA_CACHE/);
   assert.doesNotMatch(app, /name: "Aliyu", skill: "HTML & CSS"/);
   assert.doesNotMatch(app, /name: "Mina", skill: "JavaScript"/);
@@ -261,6 +321,11 @@ test("site pages consistently load the backend and use the Skillex origin", () =
   const privacy = fs.readFileSync(path.join(root, "privacy.html"), "utf8");
   assert.match(privacy, /Privacy Policy/);
   assert.match(privacy, /Netlify/);
+  assert.doesNotMatch(privacy, /aliyujaxuli@gmail\.com|hydeveco@gmail\.com|mailto:/);
+  const terms = fs.readFileSync(path.join(root, "terms.html"), "utf8");
+  assert.match(terms, /Terms and Conditions/);
+  assert.match(terms, /invitation-only/);
+  assert.match(terms, /href="privacy\.html"/);
 
   const login = fs.readFileSync(path.join(root, "login.html"), "utf8");
   assert.match(login, /href="forgot-password\.html"/);
@@ -276,7 +341,7 @@ test("site pages consistently load the backend and use the Skillex origin", () =
   assert.match(app, /function handleResetPasswordSubmit\(event\)/);
   assert.match(app, /function handleInvitationCompleteSubmit\(event\)/);
   assert.match(app, /function handleSettingsPasswordSubmit\(event\)/);
-  assert.match(app, /reply within 24 hours/);
+  assert.match(app, /follow up if access is available/);
 
   assert.match(backend, /async function sendPasswordReset\(email, redirectTo\)/);
   assert.match(backend, /async function updatePassword\(password\)/);

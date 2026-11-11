@@ -12,7 +12,7 @@ Skillex helps people teach what they know, learn from others, and make progress 
 - **Learn** through the course overview, lesson content, quizzes, notes, and practical projects.
 - **Save** skills and individual lessons to return to them later.
 - **Request account access**; account creation is currently managed by the Skillex team.
-- The team reviews access requests and aims to reply within 24 hours. Approved users receive a Supabase invitation and set a password before entering the app.
+- The team reviews access requests. Approved users receive a Supabase invitation and set a password before entering the app.
 - **Forgot password?** on Login sends a secure reset link. Signed-in users can change a password after confirming the current password or request a reset email from Settings.
 - **Create a profile** with your learning and teaching goals to discover peers after access is granted.
 - **Request an exchange** with a member and manage the request from the exchange area.
@@ -38,7 +38,7 @@ The browser client configuration lives in `js/supabase-config.js`. Its URL and p
 - Public sign-up is disabled in the dedicated Skillex Supabase project. The access-request page submits a Netlify Form and never creates an account; approved users are invited from Supabase Auth and complete setup at `complete-profile.html`.
 - Password reset and invitation links return to `reset-password.html` and `complete-profile.html`; both redirect URLs must be allowed in Supabase Auth.
 - Access-request and contact form submissions are processed by Netlify Forms after a deployment containing those forms. Email notifications are configured for any form to `aliyujaxuli@gmail.com` and `hydeveco@gmail.com`; the HYDEV recipient must confirm its notification before delivery is active.
-- Supabase's default SMTP is restricted to team-authorized recipients and has low rate limits. Configure custom SMTP before sending invitations or password resets to other addresses. Use `hydeveco@gmail.com` as the sender only if the SMTP provider authorizes it; never store SMTP credentials in client code.
+- Supabase's default SMTP is restricted to team-authorized recipients and has low rate limits. In the dedicated Skillex project, configure a provider-issued host, port, username, and password under **Authentication → Emails → SMTP Settings**. Verify the sender identity and required DNS records with the provider first, save, then test invitation and reset messages. Use `hydeveco@gmail.com` as the sender only if authorized by the provider; never store SMTP credentials in client code or the repository.
 - Community discussion posts currently save only in the visitor's browser; the interface labels this clearly and does not claim that posts are shared.
 - Email address changes may require confirmation, depending on the project Auth settings.
 

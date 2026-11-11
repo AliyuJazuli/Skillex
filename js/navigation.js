@@ -18,7 +18,8 @@
     "settings.html",
     "signup.html",
     "skill.html",
-    "swap.html"
+    "swap.html",
+    "terms.html"
   ]);
   const resolveRoute = (url) => {
     if (url.origin !== window.location.origin) return null;

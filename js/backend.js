@@ -192,6 +192,40 @@ window.SkillexBackend = (() => {
       .eq("user_id", userId));
   }
 
+  async function loadSwapRequests(userId, catalog) {
+    const db = getClient();
+    const requestRows = throwIfError(await db.from("swap_requests")
+      .select("id,requester_id,receiver_id,learn_skill_id,teach_skill_id,message,status,created_at")
+      .or(`requester_id.eq.${userId},receiver_id.eq.${userId}`)
+      .order("created_at", { ascending: false }));
+    const peerIds = [...new Set(requestRows.map((request) =>
+      request.requester_id === userId ? request.receiver_id : request.requester_id
+    ))];
+    const peers = peerIds.length
+      ? throwIfError(await db.from("profiles").select("id,display_name").in("id", peerIds))
+      : [];
+    const peerNames = new Map(peers.map((peer) => [peer.id, peer.display_name]));
+    const skillTitles = new Map(catalog.map((skill) => [skill.id, skill.title]));
+
+    return requestRows.map((request) => {
+      const peerId = request.requester_id === userId ? request.receiver_id : request.requester_id;
+      return {
+        id: request.id,
+        requesterId: request.requester_id,
+        receiverId: request.receiver_id,
+        peerId,
+        peerName: peerNames.get(peerId) || "Skillex learner",
+        learnSkill: skillTitles.get(request.learn_skill_id) || request.learn_skill_id,
+        teachSkill: skillTitles.get(request.teach_skill_id) || request.teach_skill_id,
+        learnSkillId: request.learn_skill_id,
+        teachSkillId: request.teach_skill_id,
+        message: request.message,
+        status: request.status,
+        createdAt: request.created_at
+      };
+    });
+  }
+
   async function loadUserData(userId, catalog) {
     const db = getClient();
     const [saved, progress, savedLessons, requests] = await Promise.all([
@@ -419,6 +453,7 @@ window.SkillexBackend = (() => {
     replaceSavedLessons,
     loadMatches,
     rankMatches,
+    loadSwapRequests,
     createSwapRequest,
     updateSwapStatus,
     uploadAvatar,

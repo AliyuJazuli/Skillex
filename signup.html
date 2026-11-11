@@ -41,7 +41,7 @@
       <section class="auth-card">
         <p class="eyebrow">Request an invitation</p>
         <h1>Join Skillex</h1>
-        <p>New accounts are created by invitation only. Send an access request and the Skillex team will reply within 24 hours. This form does not create an account.</p>
+        <p>New accounts are created by invitation only. Send an access request for the Skillex team to review. This form does not create an account.</p>
         <form class="contact-form auth-form" id="access-request-form" name="account-access-request" method="POST" data-netlify="true" netlify-honeypot="bot-field">
           <input type="hidden" name="form-name" value="account-access-request" />
           <p class="visually-hidden"><label>Leave this field empty: <input name="bot-field" /></label></p>
@@ -59,13 +59,16 @@
           </label>
           <label class="checkbox-label">
             <input type="checkbox" name="privacy-consent" value="accepted" required />
-            <span>I have read the <a href="privacy.html">Privacy Policy</a> and agree to the handling of this request.</span>
+            <span>I have read the <a href="privacy.html">Privacy Policy</a> and consent to using my details to review and respond to this access request.</span>
+          </label>
+          <label class="checkbox-label">
+            <input type="checkbox" name="terms-consent" value="accepted" required />
+            <span>I have read and agree to the <a href="terms.html">Terms and Conditions</a>.</span>
           </label>
           <button class="btn" type="submit">Request access</button>
           <p class="form-status" id="access-request-status" role="status" aria-live="polite"></p>
         </form>
         <p class="auth-link">Already have an account? <a href="login.html">Login</a></p>
-        <p class="auth-link">Prefer email? <a href="mailto:aliyujaxuli@gmail.com,hydeveco@gmail.com?subject=Skillex%20access%20request">Contact the Skillex team</a>.</p>
       </section>
     </main>
 
@@ -79,6 +82,7 @@
           <p class="footer-copyright">&copy; 2026 Skillex. All rights reserved.</p>
           <p class="footer-attribution">Skillex — A HYDEV product</p>
           <a href="privacy.html">Privacy Policy</a>
+          <a href="terms.html">Terms and Conditions</a>
         </div>
       </div>
     </footer>

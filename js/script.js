@@ -17,6 +17,7 @@ const STORAGE_KEYS = {
   savedLessons: "skillswap-saved-lessons",
   timeSpent: "skillswap-time-spent",
   swapRequests: "skillswap-swap-requests",
+  swapNotifications: "skillex-swap-notifications",
   communities: "skillswap-communities",
   discussions: "skillswap-discussions",
 };
@@ -2562,6 +2563,118 @@ function getSkillProgressPercent(skillId) {
   return Math.round((completedCount / skill.lessons.length) * 100);
 }
 
+function updateSwapRequestBadge(requests) {
+  const user = getCurrentUser();
+  const swapLink = document.querySelector('.quick-nav__link[href="swap.html"]');
+  if (!swapLink || !user?.id) return;
+
+  const count = requests.filter((request) =>
+    request.receiverId === user.id && request.status === "requested"
+  ).length;
+  let badge = swapLink.querySelector(".quick-nav__badge");
+  if (count && !badge) {
+    badge = document.createElement("span");
+    badge.className = "quick-nav__badge";
+    badge.setAttribute("aria-hidden", "true");
+    swapLink.append(badge);
+  }
+  if (badge) {
+    badge.textContent = count > 9 ? "9+" : String(count);
+    if (!count) badge.remove();
+  }
+  if (count) swapLink.setAttribute("aria-label", `Swap, ${count} pending incoming request${count === 1 ? "" : "s"}`);
+  else swapLink.removeAttribute("aria-label");
+}
+
+function getSwapRequestSnapshot(requests) {
+  return Object.fromEntries(requests.map((request) => [request.id, {
+    status: request.status,
+    receiverId: request.receiverId,
+    peerName: request.peerName
+  }]));
+}
+
+function saveSwapNotificationSnapshot(requests, userId) {
+  writeStorage(`${STORAGE_KEYS.swapNotifications}:${userId}`, getSwapRequestSnapshot(requests));
+}
+
+async function refreshSwapNotifications() {
+  const user = getCurrentUser();
+  if (!user?.id || !backend?.isConfigured) return;
+  if (window.__SKILLEX_SWAP_NOTIFICATION_REFRESH) {
+    await window.__SKILLEX_SWAP_NOTIFICATION_REFRESH;
+    return;
+  }
+
+  const refresh = (async () => {
+    try {
+      const requests = await backend.loadSwapRequests(user.id, skillCatalog);
+      writeStorage(STORAGE_KEYS.swapRequests, requests);
+      if (window.__SKILLEX_USER_DATA_CACHE?.userId === user.id) {
+        window.__SKILLEX_USER_DATA_CACHE.state.requests = requests;
+      }
+      updateSwapRequestBadge(requests);
+
+      const storageKey = `${STORAGE_KEYS.swapNotifications}:${user.id}`;
+      const previous = readStorage(storageKey, null);
+      if (previous) {
+        requests.forEach((request) => {
+          const prior = previous[request.id];
+          if (!prior && request.receiverId === user.id && request.status === "requested") {
+            showToast(`New skill exchange request from ${request.peerName}.`, "info", 7000);
+          } else if (prior && prior.status !== request.status) {
+            const status = request.status === "accepted" ? "accepted"
+              : request.status === "declined" ? "declined"
+                : request.status === "completed" ? "marked complete" : "updated";
+            showToast(`Your exchange request with ${request.peerName} was ${status}.`, "info", 7000);
+          }
+        });
+      }
+      saveSwapNotificationSnapshot(requests, user.id);
+    } catch (error) {
+      reportBackendError(error, "check exchange request notifications");
+    }
+  })();
+  window.__SKILLEX_SWAP_NOTIFICATION_REFRESH = refresh;
+  try {
+    await refresh;
+  } finally {
+    window.__SKILLEX_SWAP_NOTIFICATION_REFRESH = null;
+  }
+}
+
+function initializeSwapNotifications() {
+  const user = getCurrentUser();
+  if (!user?.id) {
+    if (window.__SKILLEX_SWAP_NOTIFICATION_TIMER) {
+      clearInterval(window.__SKILLEX_SWAP_NOTIFICATION_TIMER);
+      window.__SKILLEX_SWAP_NOTIFICATION_TIMER = null;
+    }
+    if (window.__SKILLEX_SWAP_VISIBILITY_HANDLER) {
+      document.removeEventListener("visibilitychange", window.__SKILLEX_SWAP_VISIBILITY_HANDLER);
+      window.__SKILLEX_SWAP_VISIBILITY_HANDLER = null;
+    }
+    return;
+  }
+  const cachedRequests = readStorage(STORAGE_KEYS.swapRequests, []);
+  updateSwapRequestBadge(cachedRequests);
+  const storageKey = `${STORAGE_KEYS.swapNotifications}:${user.id}`;
+  if (!readStorage(storageKey, null)) saveSwapNotificationSnapshot(cachedRequests, user.id);
+
+  if (window.__SKILLEX_SWAP_NOTIFICATION_TIMER) {
+    clearInterval(window.__SKILLEX_SWAP_NOTIFICATION_TIMER);
+  }
+  window.__SKILLEX_SWAP_NOTIFICATION_TIMER = setInterval(refreshSwapNotifications, 60000);
+  if (window.__SKILLEX_SWAP_VISIBILITY_HANDLER) {
+    document.removeEventListener("visibilitychange", window.__SKILLEX_SWAP_VISIBILITY_HANDLER);
+  }
+  window.__SKILLEX_SWAP_VISIBILITY_HANDLER = () => {
+    if (document.visibilityState === "visible") refreshSwapNotifications();
+  };
+  document.addEventListener("visibilitychange", window.__SKILLEX_SWAP_VISIBILITY_HANDLER);
+  refreshSwapNotifications();
+}
+
 function updateAuthLinks() {
   const currentUser = getCurrentUser();
   const isLoggedIn = !!currentUser;
@@ -3395,8 +3508,69 @@ async function handleSettingsPasswordReset() {
   }
 }
 
+function getFormDraftKey(form) {
+  return `skillex-form-draft:${form.name || form.id}`;
+}
+
+function saveFormDraft(form) {
+  const draft = {};
+  [...form.elements].forEach((field) => {
+    if (!field.name || field.name === "bot-field"
+      || ["hidden", "password", "file", "submit", "button"].includes(field.type)) return;
+    draft[field.name] = field.type === "checkbox" || field.type === "radio"
+      ? { checked: field.checked, value: field.value }
+      : { value: field.value };
+  });
+  try {
+    sessionStorage.setItem(getFormDraftKey(form), JSON.stringify(draft));
+  } catch (error) {
+    console.error("Could not save Skillex form draft:", error);
+    showBackendStatus("Your form is still available, but this browser could not save a draft while you visit another page.");
+  }
+}
+
+function restoreFormDraft(form) {
+  const key = getFormDraftKey(form);
+  try {
+    const saved = sessionStorage.getItem(key);
+    if (!saved) return;
+    const draft = JSON.parse(saved);
+    [...form.elements].forEach((field) => {
+      if (!field.name || !draft[field.name]) return;
+      const value = draft[field.name];
+      if (field.type === "checkbox" || field.type === "radio") {
+        field.checked = value.checked === true && value.value === field.value;
+      } else if (field.type !== "password" && field.type !== "file") {
+        field.value = value.value ?? "";
+      }
+    });
+  } catch (error) {
+    console.error("Could not restore Skillex form draft:", error);
+    showBackendStatus("We couldn't restore your saved form draft. Your form is still available to fill in again.");
+  }
+}
+
+function clearFormDraft(form) {
+  try {
+    sessionStorage.removeItem(getFormDraftKey(form));
+  } catch (error) {
+    console.error("Could not clear the sent Skillex form draft:", error);
+    showBackendStatus("Your form was sent, but this browser could not clear its saved draft.");
+  }
+}
+
+function attachFormDrafts() {
+  document.querySelectorAll("#access-request-form, .contact-form[name='contact']").forEach((form) => {
+    if (form.dataset.draftAttached) return;
+    form.dataset.draftAttached = "true";
+    restoreFormDraft(form);
+    form.addEventListener("input", () => saveFormDraft(form));
+    form.addEventListener("change", () => saveFormDraft(form));
+  });
+}
+
 async function submitNetlifyForm(form, status, successMessage) {
-  if (!window.location.hostname.endsWith(".netlify.app")) {
+  if (["localhost", "127.0.0.1", "::1"].includes(window.location.hostname)) {
     throw new Error("Form delivery is available on the hosted Skillex site.");
   }
   const formData = new FormData(form);
@@ -3406,8 +3580,9 @@ async function submitNetlifyForm(form, status, successMessage) {
     headers: { "Content-Type": "application/x-www-form-urlencoded" },
     body: new URLSearchParams(formData).toString()
   });
-  if (!response.ok) throw new Error("We couldn't send your message. Please try again or email us directly.");
+  if (!response.ok) throw new Error("We couldn't send your message. Please try again using the form.");
   form.reset();
+  clearFormDraft(form);
   if (status) status.textContent = successMessage;
   showToast(successMessage, "success", 7000);
 }
@@ -3422,7 +3597,7 @@ async function handleAccessRequestSubmit(event) {
     await submitNetlifyForm(
       form,
       status,
-      "Your request was sent. The Skillex team will reply within 24 hours."
+      "Your request was sent for review. The Skillex team will follow up if access is available."
     );
   } catch (error) {
     const message = error?.message || "Unable to send your access request. Please try again.";
@@ -3832,6 +4007,7 @@ function renderSwapRequests() {
     return;
   }
   const requests = getSwapRequests();
+  updateSwapRequestBadge(requests);
   if (target) {
     target.innerHTML = requests.length ? requests.map((request) => {
       const requester = request.requesterId === user.id;
@@ -3854,6 +4030,7 @@ async function updateSwapStatus(id, status) {
     await backend.updateSwapStatus(id, status);
     const requests = getSwapRequests().map((request) => request.id === id ? { ...request, status } : request);
     saveSwapRequests(requests);
+    if (getCurrentUser()?.id) saveSwapNotificationSnapshot(requests, getCurrentUser().id);
     renderSwapRequests();
   } catch (error) {
     reportBackendError(error, "update the exchange request");
@@ -4070,6 +4247,8 @@ async function hydrateCourseCatalog() {
 function initializePage() {
   updateAuthLinks();
   if (!ensureProtectedAccess()) return;
+  initializeSwapNotifications();
+  attachFormDrafts();
   attachBrowseInteractions();
   renderDashboard();
   renderSavedSkillsPage();
