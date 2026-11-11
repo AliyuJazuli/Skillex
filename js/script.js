@@ -3252,7 +3252,12 @@ async function handleSignupSubmit(event) {
     }
     if (status) status.textContent = "Account created. Check your email for a confirmation link before logging in.";
   } catch (error) {
-    if (status) status.textContent = error.message || "Unable to create your account. Please try again.";
+    const errorDetail = `${error?.code || ""} ${error?.message || ""}`.toLowerCase();
+    if (status) {
+      status.textContent = errorDetail.includes("rate limit") || errorDetail.includes("over_email_send_rate_limit")
+        ? "The sign-up email service has reached its sending limit. Please wait before trying again. Configure a custom SMTP sender in Supabase Auth to avoid this recurring."
+        : error?.message || "Unable to create your account. Please try again.";
+    }
   } finally {
     if (submit) submit.disabled = false;
   }

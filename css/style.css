@@ -2167,6 +2167,13 @@ select {
     grid-template-columns: minmax(0, 1fr);
   }
 
+  .contact-form select {
+    min-height: 3.25rem;
+    padding: 0.85rem 1rem;
+    font-size: 16px;
+    touch-action: manipulation;
+  }
+
   .site-footer {
     padding-bottom: 1.75rem;
   }

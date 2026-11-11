@@ -2,7 +2,7 @@
 
 **Where people exchange skills, share knowledge, and grow together.**
 
-Skillex is a peer-learning platform for discovering skills, following guided lessons, tracking progress, and arranging skill exchanges. It is a HYDEV product created by Aliyu Jazuli.
+Skillex is a peer-learning platform for discovering skills, following guided lessons, tracking progress, and arranging skill exchanges. It is a HYDEV product.
 
 **Live app:** [skillex-hydev.netlify.app](https://skillex-hydev.netlify.app)
 
@@ -47,7 +47,7 @@ The SQL migrations in `supabase/migrations/` must be run, in filename order, aga
 
 The first migration creates the schema, storage bucket, and row-level security policies. The second adds learning fields and all 17 catalog entries. The third adds the authored, detailed lesson material for the eight fully curated courses. The remaining catalog entries retain their existing in-app learning paths. Do not run these migrations against another Supabase project.
 
-In Supabase Auth settings, enable the email provider, set the Site URL to `https://skillex-hydev.netlify.app`, and allow that exact origin as a redirect URL. Keep email confirmation enabled for production. Profile avatars are private and use signed URLs.
+In Supabase Auth settings, enable the email provider, set the Site URL to `https://skillex-hydev.netlify.app`, and allow that exact origin as a redirect URL. Keep email confirmation enabled for production. Supabase's default email sender has strict limits; configure a custom SMTP sender in Auth email settings for reliable production sign-up and password recovery. Profile avatars are private and use signed URLs.
 
 ## Tests
 
