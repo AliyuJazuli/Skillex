@@ -241,6 +241,11 @@ test("site pages consistently load the backend and use the Skillex origin", () =
   assert.match(app, /function validateUserBackup\(backup, user\)/);
   assert.match(app, /function submitNetlifyForm\(form, status, successMessage\)/);
   assert.match(app, /window\.__SKILLEX_USER_DATA_CACHE/);
+  assert.doesNotMatch(app, /name: "Aliyu", skill: "HTML & CSS"/);
+  assert.doesNotMatch(app, /name: "Mina", skill: "JavaScript"/);
+  assert.doesNotMatch(app, /name: "Sara", skill: "UI\/UX Design"/);
+  assert.doesNotMatch(app, /Matching mentors/);
+  assert.match(app, /Use your profile skills to connect with real Skillex members/);
 
   const backend = fs.readFileSync(path.join(root, "js", "backend.js"), "utf8");
   assert.match(backend, /window\.__SKILLEX_COURSES_CACHE/);

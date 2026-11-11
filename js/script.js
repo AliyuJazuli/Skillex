@@ -2762,6 +2762,13 @@ function attachBrowseInteractions() {
   const mentorPanel = document.querySelector(".mentor-panel");
   let activeFilter = "all";
 
+  function renderPeerMatchPrompt() {
+    if (!mentorPanel) return;
+    mentorPanel.innerHTML = getCurrentUser()
+      ? `<h3>Find peer matches</h3><p>Use your profile skills to connect with real Skillex members through Skill Swap.</p><a href="swap.html" class="btn btn-small">Open Skill Swap</a>`
+      : `<h3>Find peer matches</h3><p>Sign in and add your skills to discover real Skillex members with shared interests.</p><a href="login.html" class="btn btn-small">Login to find peers</a>`;
+  }
+
   function renderCatalogCards() {
     if (!browseGrid) return;
 
@@ -2865,18 +2872,6 @@ function attachBrowseInteractions() {
         }
       }
     }
-
-    if (mentorPanel) {
-      const mentorMatches = [
-        { name: "Aliyu", skill: "HTML & CSS", focus: "Mentoring beginners" },
-        { name: "Mina", skill: "JavaScript", focus: "Live coding sessions" },
-        { name: "Sara", skill: "UI/UX Design", focus: "Portfolio reviews" }
-      ].filter((entry) => `${entry.name} ${entry.skill} ${entry.focus}`.toLowerCase().includes(searchValue));
-
-      mentorPanel.innerHTML = mentorMatches.length
-        ? `<h3>Matching mentors</h3><div class="quick-results">${mentorMatches.map((entry) => `<div class="quick-item">${entry.name} — ${entry.skill} (${entry.focus})</div>`).join("")}</div>`
-        : `<h3>Mentor community</h3><p>Join a study group or request support from experienced peers.</p>`;
-    }
   }
 
   searchInput?.addEventListener("input", applyFilters);
@@ -2890,6 +2885,7 @@ function attachBrowseInteractions() {
   });
 
   renderCatalogCards();
+  renderPeerMatchPrompt();
 }
 
 function renderDashboard() {
