@@ -356,7 +356,9 @@ test("site pages consistently load the backend and use the Skillex origin", () =
   assert.match(navigation, /href="settings\.html" data-auth="settings" hidden/);
   assert.match(app, /const isQuickNavLink = Boolean\(link\.closest\("\.quick-nav__links"\)\)/);
   assert.match(app, /if \(isQuickNavLink\) link\.hidden = !isLoggedIn/);
-  assert.match(fs.readFileSync(path.join(root, "css", "style.css"), "utf8"), /html\.dark \.quick-nav__links/);
+  const styles = fs.readFileSync(path.join(root, "css", "style.css"), "utf8");
+  assert.match(styles, /html\.dark \.quick-nav\s*,\s*body\.dark \.quick-nav\s*\{\s*border: 0;\s*background: transparent;\s*box-shadow: none;/);
+  assert.match(styles, /html\.dark \.quick-nav__links/);
 
   const themeInit = fs.readFileSync(path.join(root, "js", "theme-init.js"), "utf8");
   assert.match(themeInit, /document\.documentElement\.classList\.toggle\("dark", useDarkTheme\)/);

@@ -2158,6 +2158,13 @@ body.dark .quick-nav__link.active {
   box-shadow: 0 3px 10px rgba(0, 0, 0, 0.3);
 }
 
+html.dark .quick-nav,
+body.dark .quick-nav {
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
 html.dark .quick-nav__links,
 body.dark .quick-nav__links {
   border-color: color-mix(in srgb, var(--border) 82%, #fff 18%);
