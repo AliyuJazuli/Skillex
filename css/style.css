@@ -2153,8 +2153,28 @@ select:focus,
 }
 
 body.dark .quick-nav__link.active {
-  background: #176b56;
-  color: #fff;
+  background: var(--primary);
+  color: #102019;
+  box-shadow: 0 3px 10px rgba(0, 0, 0, 0.3);
+}
+
+html.dark .quick-nav__links,
+body.dark .quick-nav__links {
+  border-color: color-mix(in srgb, var(--border) 82%, #fff 18%);
+  background: color-mix(in srgb, var(--surface) 92%, #000);
+  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.38), inset 0 1px 0 rgba(255, 255, 255, 0.04);
+}
+
+html.dark .quick-nav__link:hover,
+body.dark .quick-nav__link:hover {
+  background: var(--surface-2);
+  color: var(--text);
+}
+
+html.dark .quick-nav__link.active,
+body.dark .quick-nav__link.active {
+  background: var(--primary);
+  color: #102019;
 }
 
 .quick-nav__link:focus-visible {

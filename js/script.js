@@ -2704,15 +2704,6 @@ function updateAuthLinks() {
       navActions.append(dashboardLink);
     }
 
-    if (!navActions.querySelector('[data-auth="settings"]')) {
-      const settingsLink = document.createElement("a");
-      settingsLink.href = "settings.html";
-      settingsLink.className = "btn btn-sm";
-      settingsLink.dataset.auth = "settings";
-      settingsLink.textContent = "Settings";
-      navActions.append(settingsLink);
-    }
-
     if (!navActions.querySelector('[data-auth="login"]')) {
       const loginLink = document.createElement("a");
       loginLink.href = "login.html";
@@ -2743,9 +2734,13 @@ function updateAuthLinks() {
     link.style.display = isLoggedIn && index === 0 ? "" : "none";
   });
   settingsElements.forEach((link, index) => {
-    link.textContent = "Settings";
+    const label = link.querySelector("span");
+    if (label) label.textContent = "Settings";
+    else link.textContent = "Settings";
     link.href = "settings.html";
-    link.style.display = isLoggedIn && index === 0 ? "" : "none";
+    const isQuickNavLink = Boolean(link.closest(".quick-nav__links"));
+    if (isQuickNavLink) link.hidden = !isLoggedIn;
+    link.style.display = isLoggedIn && (isQuickNavLink || index === 0) ? "" : "none";
   });
   logoutElements.forEach((link) => {
     link.style.display = isLoggedIn ? "" : "none";
