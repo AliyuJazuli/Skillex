@@ -1,8 +1,36 @@
 (() => {
   const routeKey = "skillex-current-route";
-  const pathname = window.location.pathname;
-  const isDirectPage = pathname !== "/" && pathname.endsWith(".html");
   const initialUrl = new URL(window.location.href);
+  const appPages = new Set([
+    "about.html",
+    "browse.html",
+    "communities.html",
+    "complete-profile.html",
+    "contact.html",
+    "dashboard.html",
+    "forgot-password.html",
+    "index.html",
+    "login.html",
+    "privacy.html",
+    "profile.html",
+    "reset-password.html",
+    "saved-skills.html",
+    "settings.html",
+    "signup.html",
+    "skill.html",
+    "swap.html"
+  ]);
+  const resolveRoute = (url) => {
+    if (url.origin !== window.location.origin) return null;
+    if (url.pathname.endsWith(".html")) return url;
+
+    const pathname = url.pathname.replace(/\/+$/, "");
+    const filename = pathname.split("/").pop() || "index";
+    if (!appPages.has(`${filename}.html`)) return null;
+    return new URL(`/${filename}.html${url.search}${url.hash}`, url.origin);
+  };
+  const initialRoute = resolveRoute(initialUrl);
+  const isDirectPage = initialUrl.pathname !== "/" && initialRoute !== null;
   const authParams = new URLSearchParams(initialUrl.search);
   new URLSearchParams(initialUrl.hash.slice(1)).forEach((value, key) => authParams.set(key, value));
   const authType = authParams.get("type");
@@ -13,7 +41,7 @@
       || params.has("error") || params.has("error_description");
   };
   let route = isDirectPage
-    ? `${pathname}${window.location.search}${window.location.hash}`
+    ? `${initialRoute.pathname}${window.location.search}${window.location.hash}`
     : authType === "invite"
       ? `/complete-profile.html${window.location.search}${window.location.hash}`
       : authType === "recovery"
@@ -174,9 +202,10 @@
   let navigationSequence = 0;
 
   async function navigate(url, historyMode = "push") {
-    const target = new URL(url, window.location.origin);
-    if (target.origin !== window.location.origin || !target.pathname.endsWith(".html")) {
-      window.location.assign(target.href);
+    const requestedUrl = new URL(url, window.location.origin);
+    const target = resolveRoute(requestedUrl);
+    if (!target) {
+      window.location.assign(requestedUrl.href);
       return;
     }
 
@@ -216,16 +245,15 @@
     if (event.defaultPrevented || event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
     const anchor = event.target.closest("a[href]");
     if (!anchor || anchor.target && anchor.target !== "_self" || anchor.hasAttribute("download")) return;
-    const target = new URL(anchor.href, window.location.href);
-    if (target.origin !== window.location.origin || !target.pathname.endsWith(".html")) return;
+    if (anchor.getAttribute("href")?.startsWith("#")) return;
+    const target = resolveRoute(new URL(anchor.href, window.location.href));
+    if (!target) return;
     event.preventDefault();
     navigate(target.href);
   });
 
   window.addEventListener("popstate", (event) => {
-    const directRoute = window.location.pathname !== "/" && window.location.pathname.endsWith(".html")
-      ? `${window.location.pathname}${window.location.search}${window.location.hash}`
-      : "/index.html";
+    const directRoute = resolveRoute(new URL(window.location.href))?.href || "/index.html";
     navigate(event.state?.skillexRoute || directRoute, "none");
   });
 

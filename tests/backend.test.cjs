@@ -279,6 +279,9 @@ test("site pages consistently load the backend and use the Skillex origin", () =
   const navigation = fs.readFileSync(path.join(root, "js", "navigation.js"), "utf8");
   assert.match(navigation, /history\.pushState\(\{ skillexRoute: routePath \}, "", window\.location\.origin\)/);
   assert.match(navigation, /document\.addEventListener\("click"/);
+  assert.match(navigation, /const appPages = new Set/);
+  assert.match(navigation, /return new URL\(`\/\$\{filename\}\.html\$\{url\.search\}\$\{url\.hash\}`, url\.origin\)/);
+  assert.match(navigation, /resolveRoute\(new URL\(anchor\.href, window\.location\.href\)\)/);
   assert.match(navigation, /const quickNavigation = document\.querySelector\("\.quick-nav"\)/);
 
   const themeInit = fs.readFileSync(path.join(root, "js", "theme-init.js"), "utf8");
