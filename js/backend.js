@@ -62,6 +62,41 @@ window.SkillexBackend = (() => {
     return throwIfError(await getClient().auth.updateUser({ password }));
   }
 
+  async function deleteAccount(password, expectedUserId) {
+    const db = getClient();
+    const { session: currentSession } = throwIfError(await db.auth.getSession());
+    if (!currentSession?.user?.email || currentSession.user.id !== expectedUserId) {
+      throw new Error("Your session has expired. Log in again before deleting your account.");
+    }
+
+    const { user, session } = throwIfError(await db.auth.signInWithPassword({
+      email: currentSession.user.email,
+      password
+    }));
+    if (user.id !== expectedUserId || !session?.access_token) {
+      throw new Error("The signed-in account could not be verified. Log in again and retry.");
+    }
+
+    const response = await fetch("/.netlify/functions/delete-account", {
+      method: "POST",
+      headers: { Authorization: `Bearer ${session.access_token}` }
+    });
+    let result;
+    try {
+      result = await response.json();
+    } catch (error) {
+      console.error("Skillex account deletion returned an invalid response:", error);
+      throw new Error("The account deletion service returned an invalid response. Contact the Skillex team before retrying.");
+    }
+    if (!response.ok) throw new Error(result.error || "The account deletion service could not complete this request.");
+
+    throwIfError(await db.auth.signOut({ scope: "local" }));
+    window.__SKILLEX_PROFILE_CACHE = null;
+    window.__SKILLEX_PROFILE_PENDING = null;
+    window.__SKILLEX_USER_DATA_CACHE = null;
+    return result;
+  }
+
   async function signOut() {
     const result = throwIfError(await getClient().auth.signOut());
     window.__SKILLEX_PROFILE_CACHE = null;
@@ -363,6 +398,34 @@ window.SkillexBackend = (() => {
     }));
   }
 
+  async function loadCommunityPosts(skillId) {
+    let query = getClient().from("community_posts")
+      .select("id,user_id,skill_id,body,status,created_at")
+      .eq("status", "published")
+      .order("created_at", { ascending: false })
+      .limit(100);
+    if (skillId) query = query.eq("skill_id", skillId);
+    const posts = throwIfError(await query);
+    const userIds = [...new Set(posts.map((post) => post.user_id))];
+    const profiles = userIds.length
+      ? throwIfError(await getClient().from("profiles").select("id,display_name").in("id", userIds))
+      : [];
+    const names = new Map(profiles.map((profile) => [profile.id, profile.display_name]));
+    return posts.map((post) => ({
+      ...post,
+      author: names.get(post.user_id) || "Skillex member"
+    }));
+  }
+
+  async function createCommunityPost(userId, skillId, body) {
+    return throwIfError(await getClient().from("community_posts").insert({
+      user_id: userId,
+      skill_id: skillId,
+      body: body.trim(),
+      status: "published"
+    }).select("id,user_id,skill_id,body,status,created_at").single());
+  }
+
   function rankMatches(entries, learnSkillId, teachSkillId) {
     const peers = new Map();
     for (const entry of entries) {
@@ -440,6 +503,7 @@ window.SkillexBackend = (() => {
     signIn,
     sendPasswordReset,
     updatePassword,
+    deleteAccount,
     signOut,
     getSession,
     loadProfile,
@@ -453,6 +517,8 @@ window.SkillexBackend = (() => {
     replaceSavedLessons,
     loadMatches,
     rankMatches,
+    loadCommunityPosts,
+    createCommunityPost,
     loadSwapRequests,
     createSwapRequest,
     updateSwapStatus,

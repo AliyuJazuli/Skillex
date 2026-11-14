@@ -9,7 +9,7 @@
     <meta name="creator" content="Aliyu Jazuli" />
     <meta name="publisher" content="HYDEV" />
     <meta name="theme-color" content="#176b56" />
-    <link rel="icon" href="assets/favicon.ico" sizes="any" />
+    <link rel="icon" href="assets/skillex-icon-32.png" type="image/png" sizes="32x32" />
     <link rel="icon" href="assets/skillex-logo.svg" type="image/svg+xml" />
     <link rel="apple-touch-icon" href="assets/skillex-icon-180.png" />
     <link rel="manifest" href="site.webmanifest" />
@@ -18,14 +18,14 @@
     <meta property="og:site_name" content="Skillex" />
     <meta property="og:title" content="Skillex | About" />
     <meta property="og:description" content="Skillex is a platform where people exchange skills, share knowledge, connect with others, and grow together." />
-    <meta property="og:image" content="https://skillex-hydev.netlify.app/assets/skillex-social.png" />
-    <meta property="og:image:width" content="1200" />
-    <meta property="og:image:height" content="630" />
-    <meta property="og:image:alt" content="Skillex logo: Where people exchange skills, share knowledge, and grow together." />
-    <meta name="twitter:card" content="summary_large_image" />
+    <meta property="og:image" content="https://skillex-hydev.netlify.app/assets/skillex-icon-512.png" />
+    <meta property="og:image:width" content="512" />
+    <meta property="og:image:height" content="512" />
+    <meta property="og:image:alt" content="Skillex app icon" />
+    <meta name="twitter:card" content="summary" />
     <meta name="twitter:title" content="Skillex | About" />
     <meta name="twitter:description" content="Skillex is a platform where people exchange skills, share knowledge, connect with others, and grow together." />
-    <meta name="twitter:image" content="https://skillex-hydev.netlify.app/assets/skillex-social.png" />
+    <meta name="twitter:image" content="https://skillex-hydev.netlify.app/assets/skillex-icon-512.png" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
@@ -33,14 +33,40 @@
       rel="stylesheet"
     />
     <script src="js/theme-init.js"></script>
-    <link rel="stylesheet" href="css/style.css" />
+    <style>
+      body[data-page-loading="true"] > :not(.page-skeleton) { visibility: hidden !important; }
+      .page-skeleton { position: fixed; inset: 0; z-index: 5000; display: block; overflow: auto; background: #f7f7f2; color: #182b25; font: 16px/1.5 "DM Sans", "Segoe UI", sans-serif; }
+      .page-skeleton[data-visible="false"] { display: none; }
+      .page-skeleton__top, .page-skeleton__nav, .page-skeleton__main { width: min(1200px, calc(100% - 3rem)); margin-inline: auto; }
+      .page-skeleton__top { min-height: 76px; display: flex; align-items: center; justify-content: space-between; gap: 1rem; border-bottom: 1px solid #dfe7df; }
+      .page-skeleton__brand, .page-skeleton__nav, .page-skeleton__chips, .page-skeleton__actions { display: flex; align-items: center; gap: .75rem; }
+      .page-skeleton__nav { min-height: 58px; justify-content: center; }
+      .page-skeleton__block { display: block; min-width: 0; border-radius: .65rem; background: linear-gradient(100deg,#e9eee9 20%,#f4f6f2 42%,#e9eee9 64%); background-size: 220% 100%; animation: page-skeleton-shimmer 1.8s ease-in-out infinite; }
+      .page-skeleton__block--logo { width: 2.2rem; height: 2.2rem; border-radius: .7rem; }
+      .page-skeleton__block--brand-name { width: 5rem; height: 1.1rem; }
+      .page-skeleton__block--action { width: 5rem; height: 2.6rem; border-radius: .8rem; }
+      .page-skeleton__block--nav-item { width: 5.2rem; height: 2rem; border-radius: 999px; }
+      .page-skeleton__main { padding-block: 2.5rem 4rem; }
+      @keyframes page-skeleton-shimmer { to { background-position-x: -220%; } }
+      @media (max-width: 760px) {
+        .page-skeleton__top, .page-skeleton__nav, .page-skeleton__main { width: calc(100% - 2.25rem); }
+        .page-skeleton__top { min-height: 68px; }
+        .page-skeleton__nav { justify-content: flex-start; overflow: hidden; }
+        .page-skeleton__nav .page-skeleton__block--nav-item:nth-child(n + 5) { display: none; }
+        .page-skeleton__main { padding-block: 2rem 3.5rem; }
+      }
+      @media (prefers-reduced-motion: reduce) { .page-skeleton__block { animation: none; } }
+      html.dark .page-skeleton { background: #111b17; color: #eef4ef; }
+      html.dark .page-skeleton__block { background: linear-gradient(100deg,#21332b 20%,#34483e 42%,#21332b 64%); background-size: 220% 100%; }
+    </style>    <link rel="stylesheet" href="css/style.css" />
       <meta property="og:image:type" content="image/png" />
       <meta property="og:url" content="https://skillex-hydev.netlify.app/about.html" />
-      <meta name="twitter:image:alt" content="Skillex logo: Where people exchange skills, share knowledge, and grow together." />
+      <meta name="twitter:image:alt" content="Skillex app icon" />
       <meta name="application-name" content="Skillex" />
       <meta name="robots" content="index, follow, max-image-preview:large" />
   </head>
   <body>
+    <script src="js/page-skeleton.js"></script>
     <header class="site-header">
       <nav class="navbar container">
         <a href="index.html" class="logo">Skillex</a>
@@ -57,79 +83,78 @@
           <button class="theme-toggle" type="button" aria-label="Toggle color theme">
             <span class="theme-toggle__icon">☀️</span>
           </button>
-          <a href="contact.html" class="btn btn-sm">Join Now</a>
         </div>
       </nav>
     </header>
 
     <main class="container page-shell">
       <section class="page-hero">
-        <p class="eyebrow">Our story</p>
-        <h1>We’re building a more generous way to learn.</h1>
-        <p>
+        <p class="eyebrow" data-cms-key="hero-eyebrow" data-cms-label="About eyebrow">Our story</p>
+        <h1 data-cms-key="hero-title" data-cms-label="About heading">We’re building a more generous way to learn.</h1>
+        <p data-cms-key="hero-description" data-cms-label="About introduction">
           Skillex was created for students who want growth without barriers, where knowledge becomes a shared resource instead of a paid service.
         </p>
       </section>
 
       <section class="about-grid">
         <article class="info-card wide-card">
-          <h3>Our story</h3>
-          <p>
+          <h3 data-cms-key="story-title" data-cms-label="Story card heading">Our story</h3>
+          <p data-cms-key="story-description" data-cms-label="Story card description">
             We noticed that many students had valuable skills but little access to affordable learning. Skillex turns that gap into an opportunity by connecting people who want to teach with people who want to learn.
           </p>
         </article>
         <article class="info-card">
-          <h3>Mission</h3>
-          <p>Make peer-to-peer learning accessible, practical, and empowering for every student.</p>
+          <h3 data-cms-key="mission-title" data-cms-label="Mission heading">Mission</h3>
+          <p data-cms-key="mission-description" data-cms-label="Mission description">Make peer-to-peer learning accessible, practical, and empowering for every student.</p>
         </article>
         <article class="info-card">
-          <h3>Vision</h3>
-          <p>Create a campus culture where sharing knowledge feels natural, rewarding, and community-driven.</p>
+          <h3 data-cms-key="vision-title" data-cms-label="Vision heading">Vision</h3>
+          <p data-cms-key="vision-description" data-cms-label="Vision description">Create a campus culture where sharing knowledge feels natural, rewarding, and community-driven.</p>
         </article>
       </section>
 
       <section class="section section-alt">
         <div class="section-heading">
-          <p class="eyebrow">Why choose Skillex</p>
-          <h2>Built for students, designed for momentum.</h2>
+          <p class="eyebrow" data-cms-key="why-eyebrow" data-cms-label="Why Skillex eyebrow">Why choose Skillex</p>
+          <h2 data-cms-key="why-title" data-cms-label="Why Skillex heading">Built for students, designed for momentum.</h2>
         </div>
         <div class="steps-grid">
           <article class="info-card">
-            <h3>Free to join</h3>
-            <p>No subscriptions. No hidden fees. Just practical learning and generous exchange.</p>
+            <h3 data-cms-key="reason-one-title" data-cms-label="First reason heading">Free to join</h3>
+            <p data-cms-key="reason-one-description" data-cms-label="First reason description">No subscriptions. No hidden fees. Just practical learning and generous exchange.</p>
           </article>
           <article class="info-card">
-            <h3>Flexible exchange</h3>
-            <p>Learn by teaching, or teach by learning — both are welcome.</p>
+            <h3 data-cms-key="reason-two-title" data-cms-label="Second reason heading">Flexible exchange</h3>
+            <p data-cms-key="reason-two-description" data-cms-label="Second reason description">Learn by teaching, or teach by learning — both are welcome.</p>
           </article>
           <article class="info-card">
-            <h3>Supportive community</h3>
-            <p>Every session is designed to feel encouraging, modern, and student-first.</p>
+            <h3 data-cms-key="reason-three-title" data-cms-label="Third reason heading">Supportive community</h3>
+            <p data-cms-key="reason-three-description" data-cms-label="Third reason description">Every session is designed to feel encouraging, modern, and student-first.</p>
           </article>
         </div>
       </section>
 
       <section class="section">
         <div class="section-heading">
-          <p class="eyebrow">About the product</p>
-          <h2>Built to exchange skills, share knowledge, and grow together.</h2>
+          <p class="eyebrow" data-cms-key="product-eyebrow" data-cms-label="Product eyebrow">About the product</p>
+          <h2 data-cms-key="product-title" data-cms-label="Product heading">Built to exchange skills, share knowledge, and grow together.</h2>
         </div>
         <div class="steps-grid">
           <article class="info-card">
-            <h3>A HYDEV product</h3>
-            <p>Skillex is a HYDEV product connecting people who want to teach with people who want to learn.</p>
+            <h3 data-cms-key="product-card-title" data-cms-label="Product card heading">A HYDEV product</h3>
+            <p data-cms-key="product-card-description" data-cms-label="Product card description">Skillex is a HYDEV product connecting people who want to teach with people who want to learn.</p>
           </article>
           <article class="info-card">
-            <h3>Technology stack</h3>
-            <p>Skillex uses HTML, CSS, and JavaScript with Supabase Auth, Postgres, Row Level Security, and private avatar storage. The site is hosted on Netlify.</p>
+            <h3 data-cms-key="technology-title" data-cms-label="Technology card heading">Technology stack</h3>
+            <p data-cms-key="technology-description" data-cms-label="Technology card description">Skillex uses HTML, CSS, and JavaScript with Supabase Auth, Postgres, Row Level Security, and private avatar storage. The site is hosted on Netlify.</p>
           </article>
         </div>
       </section>
 
       <section class="cta-section">
         <div class="container cta-box">
-          <h2>Start sharing what you know and learning what matters.</h2>
-          <a href="contact.html" class="btn">Get Involved</a>
+          <h2 data-cms-key="cta-title" data-cms-label="About call to action heading">Start sharing what you know and learning what matters.</h2>
+          <a href="contact.html" class="btn" data-cms-key="cta-label" data-cms-label="About call to action button">Get Involved</a>
         </div>
       </section>
     </main>
@@ -137,17 +162,11 @@
     <footer class="site-footer">
       <div class="container footer-content">
         <div class="footer-brand">
-          <p class="footer-built-by">BUILT BY</p>
-          <a class="footer-hydev" href="https://aliyujazuli.netlify.app" target="_blank" rel="noopener noreferrer" aria-label="Visit the HYDEV ecosystem">
-            <img src="assets/hydev-logo-tile.png" alt="HYDEV" width="116" height="90" />
-          </a>
           <p class="footer-copyright">&copy; 2026 Skillex. All rights reserved.</p>
-          <p class="footer-attribution">Skillex — A HYDEV product</p>
-        </div>
-        <div class="footer-links">
-          <a href="index.html">Home</a>
-          <a href="browse.html">Browse</a>
-          <a href="contact.html">Contact</a>
+          <a class="footer-hydev" href="https://aliyujazuli.netlify.app/" aria-label="Visit Aliyu Muhammad Jazuli's website">
+            <img src="assets/hydev-logo-tile.png" alt="" width="116" height="90" loading="lazy" decoding="async" />
+          </a>
+          <p class="footer-attribution">Skillex &mdash; A HYDEV product</p>
         </div>
       </div>
     </footer>
@@ -158,6 +177,8 @@
     <script src="js/backend.js"></script>
     <script src="js/modules/learning-data.js"></script>
     <script src="js/modules/learning-ui.js"></script>
+    <script src="js/app-version.js"></script>
+    <script src="js/app-lifecycle.js"></script>
     <script src="js/script.js"></script>
   </body>
 </html>

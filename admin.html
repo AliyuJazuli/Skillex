@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="robots" content="noindex, nofollow" />
+    <meta name="theme-color" content="#176b56" />
+    <title>Skillex | Owner dashboard</title>
+    <link rel="icon" href="assets/skillex-icon-32.png" type="image/png" sizes="32x32" />
+    <script src="js/theme-init.js"></script>
+    <link rel="stylesheet" href="css/style.css" />
+    <link rel="stylesheet" href="css/admin.css" />
+  </head>
+  <body class="admin-page">
+    <header class="admin-header">
+      <a class="admin-brand" href="index.html" aria-label="Skillex home">
+        <span class="admin-brand__mark" aria-hidden="true">S</span>
+        <span><strong>Skillex</strong><small>Owner workspace</small></span>
+      </a>
+      <div class="admin-header__actions">
+        <span id="admin-owner-label" class="admin-owner-label" hidden></span>
+        <button id="admin-sign-out" class="btn btn-secondary btn-small" type="button" hidden>Sign out</button>
+        <button class="theme-toggle" type="button" aria-label="Toggle color theme"><span class="theme-toggle__icon">☀️</span></button>
+      </div>
+    </header>
+
+    <main class="admin-shell">
+      <section id="admin-auth" class="admin-auth-card">
+        <p class="eyebrow">Private workspace</p>
+        <h1>Owner sign in</h1>
+        <p>Use the existing owner account. Access is checked by the server; a regular member account cannot open dashboard data.</p>
+        <form id="admin-login-form" class="contact-form auth-form">
+          <label>Email
+            <input name="email" type="email" autocomplete="username" required />
+          </label>
+          <label>Password
+            <input name="password" type="password" autocomplete="current-password" required />
+          </label>
+          <button class="btn" type="submit">Sign in</button>
+          <p id="admin-auth-status" class="form-status" role="status" aria-live="polite"></p>
+        </form>
+      </section>
+
+      <section id="admin-denied" class="admin-auth-card" hidden>
+        <p class="eyebrow">Access restricted</p>
+        <h1>Owner access required</h1>
+        <p id="admin-denied-message">This account is not authorized to use the owner workspace.</p>
+        <button id="admin-denied-sign-out" class="btn btn-secondary" type="button">Sign out</button>
+      </section>
+
+      <section id="admin-workspace" hidden>
+        <div class="admin-page-heading">
+          <div>
+            <p class="eyebrow">Private workspace</p>
+            <h1>Owner dashboard</h1>
+            <p>Review access, manage the Skillex community, and publish updates.</p>
+          </div>
+          <button id="admin-refresh" class="btn btn-secondary" type="button">Refresh</button>
+        </div>
+
+        <p id="admin-global-status" class="admin-global-status" role="status" aria-live="polite"></p>
+
+        <nav class="admin-tabs" aria-label="Owner dashboard sections">
+          <button type="button" data-admin-tab="overview" aria-current="page">Overview</button>
+          <button type="button" data-admin-tab="requests">Access requests</button>
+          <button type="button" data-admin-tab="members">Members</button>
+          <button type="button" data-admin-tab="moderation">Moderation</button>
+          <button type="button" data-admin-tab="announcements">Announcements</button>
+          <button type="button" data-admin-tab="pages">Edit site</button>
+        </nav>
+
+        <section class="admin-panel admin-overview" data-admin-panel="overview">
+          <div class="admin-overview-heading">
+            <div>
+              <p class="eyebrow">Workspace overview</p>
+              <h2>Skillex at a glance</h2>
+              <p>Requests, members, community activity, and published site content.</p>
+            </div>
+            <p id="admin-metrics-updated" class="admin-metrics-updated" role="status"></p>
+          </div>
+          <div id="admin-metrics" class="admin-stat-grid" aria-live="polite">
+            <p class="admin-empty-state">Loading workspace metrics…</p>
+          </div>
+          <div class="admin-insights-grid">
+            <section class="admin-insight-card" aria-labelledby="admin-request-insights-title">
+              <div class="admin-insight-card__heading">
+                <div>
+                  <p class="eyebrow">Access</p>
+                  <h3 id="admin-request-insights-title">Invitation pipeline</h3>
+                </div>
+                <button class="admin-text-button" type="button" data-admin-open-tab="requests">Review requests</button>
+              </div>
+              <div id="admin-request-insights" class="admin-insight-card__content">
+                <p class="admin-empty-state">Request statistics will appear here.</p>
+              </div>
+            </section>
+            <section class="admin-insight-card" aria-labelledby="admin-community-insights-title">
+              <div class="admin-insight-card__heading">
+                <div>
+                  <p class="eyebrow">Community</p>
+                  <h3 id="admin-community-insights-title">Discussion health</h3>
+                </div>
+                <button class="admin-text-button" type="button" data-admin-open-tab="moderation">Open moderation</button>
+              </div>
+              <div id="admin-community-insights" class="admin-insight-card__content">
+                <p class="admin-empty-state">Community statistics will appear here.</p>
+              </div>
+            </section>
+            <section class="admin-insight-card" aria-labelledby="admin-content-insights-title">
+              <div class="admin-insight-card__heading">
+                <div>
+                  <p class="eyebrow">Website</p>
+                  <h3 id="admin-content-insights-title">Published content</h3>
+                </div>
+                <button class="admin-text-button" type="button" data-admin-open-tab="pages">Edit site content</button>
+              </div>
+              <div id="admin-content-insights" class="admin-insight-card__content">
+                <p class="admin-empty-state">Publishing statistics will appear here.</p>
+              </div>
+            </section>
+          </div>
+        </section>
+
+        <section class="admin-panel" data-admin-panel="requests" hidden>
+          <div class="admin-panel-heading">
+            <div><p class="eyebrow">Invite-only access</p><h2>Access requests</h2></div>
+            <label class="admin-filter">Filter
+              <select id="admin-request-filter">
+                <option value="all">All requests</option>
+                <option value="pending">Verifying</option>
+                <option value="approved">Approved</option>
+                <option value="invited">Invitation sent</option>
+                <option value="completed">Completed</option>
+                <option value="declined">Declined</option>
+              </select>
+            </label>
+          </div>
+          <div id="admin-requests" class="admin-list"></div>
+        </section>
+
+        <section class="admin-panel" data-admin-panel="members" hidden>
+          <div class="admin-panel-heading">
+            <div><p class="eyebrow">Account access</p><h2>Members</h2></div>
+            <label class="admin-search">Search
+              <input id="admin-member-search" type="search" placeholder="Name or email" />
+            </label>
+          </div>
+          <div id="admin-members" class="admin-list"></div>
+          <button id="admin-members-next" class="btn btn-secondary btn-small" type="button" hidden>Load more members</button>
+        </section>
+
+        <section class="admin-panel" data-admin-panel="moderation" hidden>
+          <div class="admin-panel-heading">
+            <div><p class="eyebrow">Community safety</p><h2>Discussion posts</h2></div>
+          </div>
+          <div class="admin-callout admin-callout--warning">
+            <strong>Moderation scope</strong>
+            <p>Posts will be shared across members after the community migration is applied. Existing browser-only posts are not uploaded or exposed.</p>
+          </div>
+          <div id="admin-moderation" class="admin-list"></div>
+        </section>
+
+        <section class="admin-panel" data-admin-panel="announcements" hidden>
+          <div class="admin-panel-heading">
+            <div><p class="eyebrow">Keep members informed</p><h2>Announcements</h2></div>
+          </div>
+          <form id="admin-announcement-form" class="admin-editor">
+            <input name="id" type="hidden" />
+            <label>Title
+              <input name="title" maxlength="120" required />
+            </label>
+            <label>Message
+              <textarea name="body" rows="4" maxlength="2000" required></textarea>
+            </label>
+            <label class="admin-inline-check"><input name="publish" type="checkbox" /> Publish immediately</label>
+            <div class="admin-actions">
+              <button class="btn" type="submit">Save announcement</button>
+              <button id="admin-announcement-reset" class="btn btn-secondary" type="button">Clear</button>
+            </div>
+            <p class="form-status" id="admin-announcement-status" role="status" aria-live="polite"></p>
+          </form>
+          <div id="admin-announcements" class="admin-list"></div>
+        </section>
+
+        <section class="admin-panel" data-admin-panel="pages" hidden>
+          <div class="admin-panel-heading">
+            <div><p class="eyebrow">Site editor</p><h2>Edit site content</h2></div>
+          </div>
+          <div class="admin-callout">
+            <strong>Content-only editing</strong>
+            <p>Edit page titles and mapped copy, preview the current live page, then save a draft before publishing. Layout, styling, and HTML remain in the code.</p>
+          </div>
+          <form id="admin-page-form" class="admin-editor">
+            <label>Page
+              <select name="pageKey" required>
+                <option value="index">Home</option>
+                <option value="about">About</option>
+                <option value="browse">Browse</option>
+                <option value="communities">Communities</option>
+                <option value="complete-profile">Invitation setup</option>
+                <option value="contact">Contact</option>
+                <option value="dashboard">Member dashboard</option>
+                <option value="forgot-password">Forgot password</option>
+                <option value="login">Login</option>
+                <option value="privacy">Privacy policy</option>
+                <option value="profile">Profile</option>
+                <option value="reset-password">Reset password</option>
+                <option value="saved-skills">Saved skills</option>
+                <option value="settings">Settings</option>
+                <option value="signup">Request invitation</option>
+                <option value="skill">Skill lesson</option>
+                <option value="swap">Skill swap</option>
+                <option value="terms">Terms</option>
+              </select>
+            </label>
+            <label>Page and social title
+              <input name="title" maxlength="120" required />
+            </label>
+            <div id="admin-page-fields" class="admin-page-fields">
+              <p class="admin-empty-state">Choose a page to load its editable copy.</p>
+            </div>
+            <div class="admin-actions">
+              <button class="btn" type="submit">Save draft</button>
+              <button id="admin-page-publish" class="btn btn-secondary" type="button">Publish saved draft</button>
+              <a id="admin-page-preview" class="btn btn-secondary btn-small" href="index.html" target="_blank" rel="noopener noreferrer">Preview live page</a>
+            </div>
+            <p class="form-status" id="admin-page-status" role="status" aria-live="polite"></p>
+          </form>
+          <div id="admin-pages" class="admin-list"></div>
+        </section>
+      </section>
+    </main>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="js/supabase-config.js"></script>
+    <script src="js/admin.js"></script>
+  </body>
+</html>

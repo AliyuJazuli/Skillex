@@ -70,27 +70,21 @@
     }
   }
 
-  const navigationLoader = document.createElement("div");
-  navigationLoader.className = "navigation-loader";
-  navigationLoader.setAttribute("role", "status");
-  navigationLoader.setAttribute("aria-live", "polite");
-  navigationLoader.setAttribute("aria-hidden", "true");
-  navigationLoader.innerHTML = `
-    <span class="navigation-loader__spinner" aria-hidden="true"></span>
-    <span>Loading Skillex</span>
-  `;
-  document.body.append(navigationLoader);
+  const pageSkeleton = window.SkillexPageSkeleton;
 
-  function setNavigationLoading(isLoading) {
-    navigationLoader.dataset.visible = String(isLoading);
-    navigationLoader.setAttribute("aria-hidden", String(!isLoading));
-    document.body.toggleAttribute("aria-busy", isLoading);
+  function setNavigationLoading(isLoading, target = window.SKILLEX_ROUTE_URL) {
+    if (isLoading) {
+      pageSkeleton?.show(target.pathname);
+      return;
+    }
+    pageSkeleton?.hide();
   }
 
   function loadScripts(documentToRender) {
     const scripts = [...documentToRender.body.querySelectorAll("script")];
     return scripts.reduce((queue, sourceScript) => queue.then(() => {
-      if (sourceScript.src.endsWith("/js/navigation.js")) return;
+      if (sourceScript.src.endsWith("/js/navigation.js")
+        || sourceScript.src.endsWith("/js/page-skeleton.js")) return;
       if (sourceScript.src.includes("/@supabase/supabase-js@2") && window.supabase?.createClient) return;
       const script = document.createElement("script");
       for (const attribute of sourceScript.attributes) {
@@ -98,7 +92,10 @@
       }
       if (sourceScript.src) {
         return new Promise((resolve, reject) => {
-          script.addEventListener("load", resolve, { once: true });
+          script.addEventListener("load", () => {
+            if (sourceScript.src.endsWith("/js/script.js")) resolve(window.SkillexAppReady);
+            else resolve();
+          }, { once: true });
           script.addEventListener("error", () => reject(new Error(`Could not load ${sourceScript.src}.`)), { once: true });
           document.body.append(script);
         });
@@ -172,9 +169,21 @@
     }
 
     const currentPage = window.SKILLEX_ROUTE_URL.pathname.split("/").pop() || "index.html";
+    const parentPages = {
+      "complete-profile.html": "dashboard.html",
+      "forgot-password.html": "index.html",
+      "login.html": "index.html",
+      "profile.html": "dashboard.html",
+      "reset-password.html": "dashboard.html",
+      "signup.html": window.SKILLEX_ROUTE_URL.hash.includes("request=") ? "signup.html" : "index.html",
+      "skill.html": "browse.html",
+      "terms.html": "signup.html",
+      "privacy.html": "signup.html"
+    };
+    const activePage = parentPages[currentPage] || (appPages.has(currentPage) ? currentPage : "index.html");
     quickNav.querySelectorAll(".quick-nav__link").forEach((link) => {
       const targetPage = link.getAttribute("href")?.split("/").pop() || "index.html";
-      if (currentPage === targetPage) {
+      if (activePage === targetPage) {
         link.classList.add("active");
         link.setAttribute("aria-current", "page");
       } else {
@@ -182,16 +191,28 @@
         link.removeAttribute("aria-current");
       }
     });
+
+    const activeLink = quickNav.querySelector(".quick-nav__link[aria-current='page']");
+    const linksViewport = quickNav.querySelector(".quick-nav__links");
+    if (activeLink && linksViewport) {
+      const viewportRect = linksViewport.getBoundingClientRect();
+      const linkRect = activeLink.getBoundingClientRect();
+      linksViewport.scrollLeft = Math.max(
+        0,
+        linksViewport.scrollLeft + linkRect.left - viewportRect.left
+          - (linksViewport.clientWidth - activeLink.offsetWidth) / 2
+      );
+    }
   }
 
-  async function renderPage(html, target) {
+  async function renderPage(html, target, sequence) {
     const nextDocument = new DOMParser().parseFromString(html, "text/html");
     const quickNavigation = document.querySelector(".quick-nav");
     const bodyNodes = [...nextDocument.body.childNodes].map((node) => node.cloneNode(true));
     document.title = nextDocument.title;
     document.documentElement.lang = nextDocument.documentElement.lang || "en";
     await replaceHead(nextDocument);
-    document.body.replaceChildren(...bodyNodes, navigationLoader);
+    document.body.replaceChildren(...bodyNodes, pageSkeleton.element);
     document.body.classList.toggle("dark", document.documentElement.classList.contains("dark"));
     window.SKILLEX_ROUTE_URL = target;
     if (quickNavigation) {
@@ -199,6 +220,12 @@
     }
     renderQuickNavigation();
     await loadScripts(nextDocument);
+    if (!window.SkillexAppReady) throw new Error("Skillex did not report app readiness.");
+    const initialized = await window.SkillexAppReady;
+    if (initialized && sequence === navigationSequence) {
+      pageSkeleton?.hide();
+      window.scrollTo(0, 0);
+    }
   }
 
   let navigationSequence = 0;
@@ -215,7 +242,7 @@
 
     const sequence = ++navigationSequence;
     const routePath = `${target.pathname}${target.search}${target.hash}`;
-    setNavigationLoading(true);
+    setNavigationLoading(true, target);
     try {
       const response = await fetch(routePath, { headers: { "X-Skillex-Navigation": "1" } });
       if (!response.ok) throw new Error(`Page request failed (${response.status}).`);
@@ -231,14 +258,13 @@
       } else if (historyMode === "replace" && !isAuthCallback(target)) {
         history.replaceState({ skillexRoute: routePath }, "", window.location.origin);
       }
-      await renderPage(html, target);
+      await renderPage(html, target, sequence);
     } catch (error) {
       if (sequence === navigationSequence) {
         console.error("Skillex page navigation failed:", error);
         window.SkillexShowToast?.("This page could not be loaded. Please try again.", "error");
+        pageSkeleton?.hide();
       }
-    } finally {
-      if (sequence === navigationSequence) setNavigationLoading(false);
     }
   }
 
@@ -247,6 +273,13 @@
     if (event.defaultPrevented || event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
     const anchor = event.target.closest("a[href]");
     if (!anchor || anchor.target && anchor.target !== "_self" || anchor.hasAttribute("download")) return;
+    if (anchor.hasAttribute("data-history-back")) {
+      if (window.history.length > 1) {
+        event.preventDefault();
+        window.history.back();
+      }
+      return;
+    }
     if (anchor.getAttribute("href")?.startsWith("#")) return;
     const target = resolveRoute(new URL(anchor.href, window.location.href));
     if (!target) return;

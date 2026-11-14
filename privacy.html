@@ -6,7 +6,7 @@
     <title>Skillex | Privacy Policy</title>
     <meta name="description" content="Learn what information Skillex uses and how account, learning, and contact data are handled." />
     <meta name="theme-color" content="#176b56" />
-    <link rel="icon" href="assets/favicon.ico" sizes="any" />
+    <link rel="icon" href="assets/skillex-icon-32.png" type="image/png" sizes="32x32" />
     <link rel="icon" href="assets/skillex-logo.svg" type="image/svg+xml" />
     <link rel="apple-touch-icon" href="assets/skillex-icon-180.png" />
     <link rel="manifest" href="site.webmanifest" />
@@ -15,18 +15,49 @@
     <meta property="og:site_name" content="Skillex" />
     <meta property="og:title" content="Skillex Privacy Policy" />
     <meta property="og:description" content="Learn how Skillex handles account, learning, and contact information." />
-    <meta property="og:image" content="https://skillex-hydev.netlify.app/assets/skillex-social.png" />
-    <meta name="twitter:card" content="summary_large_image" />
+    <meta property="og:image" content="https://skillex-hydev.netlify.app/assets/skillex-icon-512.png" />
+    <meta property="og:image:type" content="image/png" />
+    <meta property="og:image:width" content="512" />
+    <meta property="og:image:height" content="512" />
+    <meta property="og:image:alt" content="Skillex app icon" />
+    <meta name="twitter:card" content="summary" />
     <meta name="twitter:title" content="Skillex Privacy Policy" />
-    <meta name="twitter:image" content="https://skillex-hydev.netlify.app/assets/skillex-social.png" />
+    <meta name="twitter:image" content="https://skillex-hydev.netlify.app/assets/skillex-icon-512.png" />
+    <meta name="twitter:image:alt" content="Skillex app icon" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
     <script src="js/theme-init.js"></script>
-    <link rel="stylesheet" href="css/style.css" />
+    <style>
+      body[data-page-loading="true"] > :not(.page-skeleton) { visibility: hidden !important; }
+      .page-skeleton { position: fixed; inset: 0; z-index: 5000; display: block; overflow: auto; background: #f7f7f2; color: #182b25; font: 16px/1.5 "DM Sans", "Segoe UI", sans-serif; }
+      .page-skeleton[data-visible="false"] { display: none; }
+      .page-skeleton__top, .page-skeleton__nav, .page-skeleton__main { width: min(1200px, calc(100% - 3rem)); margin-inline: auto; }
+      .page-skeleton__top { min-height: 76px; display: flex; align-items: center; justify-content: space-between; gap: 1rem; border-bottom: 1px solid #dfe7df; }
+      .page-skeleton__brand, .page-skeleton__nav, .page-skeleton__chips, .page-skeleton__actions { display: flex; align-items: center; gap: .75rem; }
+      .page-skeleton__nav { min-height: 58px; justify-content: center; }
+      .page-skeleton__block { display: block; min-width: 0; border-radius: .65rem; background: linear-gradient(100deg,#e9eee9 20%,#f4f6f2 42%,#e9eee9 64%); background-size: 220% 100%; animation: page-skeleton-shimmer 1.8s ease-in-out infinite; }
+      .page-skeleton__block--logo { width: 2.2rem; height: 2.2rem; border-radius: .7rem; }
+      .page-skeleton__block--brand-name { width: 5rem; height: 1.1rem; }
+      .page-skeleton__block--action { width: 5rem; height: 2.6rem; border-radius: .8rem; }
+      .page-skeleton__block--nav-item { width: 5.2rem; height: 2rem; border-radius: 999px; }
+      .page-skeleton__main { padding-block: 2.5rem 4rem; }
+      @keyframes page-skeleton-shimmer { to { background-position-x: -220%; } }
+      @media (max-width: 760px) {
+        .page-skeleton__top, .page-skeleton__nav, .page-skeleton__main { width: calc(100% - 2.25rem); }
+        .page-skeleton__top { min-height: 68px; }
+        .page-skeleton__nav { justify-content: flex-start; overflow: hidden; }
+        .page-skeleton__nav .page-skeleton__block--nav-item:nth-child(n + 5) { display: none; }
+        .page-skeleton__main { padding-block: 2rem 3.5rem; }
+      }
+      @media (prefers-reduced-motion: reduce) { .page-skeleton__block { animation: none; } }
+      html.dark .page-skeleton { background: #111b17; color: #eef4ef; }
+      html.dark .page-skeleton__block { background: linear-gradient(100deg,#21332b 20%,#34483e 42%,#21332b 64%); background-size: 220% 100%; }
+    </style>    <link rel="stylesheet" href="css/style.css" />
     <meta name="robots" content="index, follow, max-image-preview:large" />
   </head>
   <body>
+    <script src="js/page-skeleton.js"></script>
     <header class="site-header">
       <nav class="navbar container">
         <a href="index.html" class="logo">Skillex</a>
@@ -39,44 +70,42 @@
 
     <main class="container page-shell">
       <article class="policy-card">
-        <p class="eyebrow">Last updated: November 11, 2026</p>
-        <h1>Privacy Policy</h1>
-        <p>Skillex is a skill-sharing and learning platform. This policy explains what information is handled when you browse the site, request an account, contact the team, or use an account.</p>
+        <a class="policy-back" href="signup.html#new-request">← Back to request invitation</a>
+        <p class="eyebrow" data-cms-key="policy-updated" data-cms-label="Policy revision date">Last updated: November 11, 2026</p>
+        <h1 data-cms-key="hero-title" data-cms-label="Privacy policy heading">Privacy Policy</h1>
+        <p data-cms-key="policy-introduction" data-cms-label="Privacy policy introduction">Skillex is a skill-sharing and learning platform. This policy explains what information is handled when you browse the site, request an account, contact the team, or use an account.</p>
 
-        <h2>Information you provide</h2>
-        <p>An account access request may include your name, email address, and learning interests. Contact messages may include your name, reply email, subject, and message. Account holders may provide a display name, email, biography, learning and teaching goals, profile photo, saved skills, lesson notes, quiz results, progress, and exchange requests.</p>
+        <h2 data-cms-key="information-title" data-cms-label="Information section heading">Information you provide</h2>
+        <p data-cms-key="information-description" data-cms-label="Information section text">An account access request includes your name and email address. Contact messages include your name, reply email, and message. Account holders may provide a display name, email, biography, learning and teaching goals, profile photo, saved skills, lesson notes, quiz results, progress, and exchange requests.</p>
 
-        <h2>How information is used</h2>
-        <p>Skillex uses this information to review account requests, respond to messages, operate user accounts, show peer skill matches, save learning progress, and maintain app security. Profile names, biographies, and skill interests may be visible to signed-in members so they can discover peers.</p>
+        <h2 data-cms-key="use-title" data-cms-label="Information use section heading">How information is used</h2>
+        <p data-cms-key="use-description" data-cms-label="Information use section text">Skillex uses this information to review account requests, respond to messages, operate user accounts, show peer skill matches, save learning progress, and maintain app security. Profile names, biographies, and skill interests may be visible to signed-in members so they can discover peers.</p>
 
-        <h2>Services that process information</h2>
-        <p>Account, profile, learning, and exchange data are stored in the dedicated Skillex Supabase project. Profile photos are stored in a private bucket and served through time-limited links. Account access requests and contact forms are designed for Netlify Forms; when enabled for the deployed site, Netlify processes and stores those submissions and can email the site owner. Email correspondence is handled by the email services used by the sender and recipient.</p>
+        <h2 data-cms-key="services-title" data-cms-label="Services section heading">Services that process information</h2>
+        <p data-cms-key="services-description" data-cms-label="Services section text">Account, profile, learning, and exchange data are stored in the dedicated Skillex Supabase project. Profile photos are stored in a private bucket and served through time-limited links. Access requests are stored in a private Supabase table and reviewed by the Skillex owner. Contact messages are sent to the configured recipient through Gmail and are not stored in the owner dashboard. Community posts are shared with members and may be moderated by the owner. Email correspondence is also handled by the email services used by the sender and recipient.</p>
 
-        <h2>Cookies and local storage</h2>
-        <p>The app uses browser local storage for appearance preferences and as a cache for learning data. Authentication sessions are managed by Supabase. Clearing browser storage can remove local preferences; signed-in learning data is synchronized with the account when the app can reach Supabase.</p>
+        <h2 data-cms-key="storage-title" data-cms-label="Storage section heading">Cookies and local storage</h2>
+        <p data-cms-key="storage-description" data-cms-label="Storage section text">The app uses browser local storage for appearance preferences and as a cache for learning data. Authentication sessions are managed by Supabase. Clearing browser storage can remove local preferences; signed-in learning data is synchronized with the account when the app can reach Supabase.</p>
 
-        <h2>Data choices and requests</h2>
-        <p>Signed-in members can export and import learning data from Settings. To ask a question, request correction, or request deletion of account or form information, use the <a href="contact.html">contact form</a>. We may need to verify account ownership before acting on a request.</p>
+        <h2 data-cms-key="choices-title" data-cms-label="Data choices section heading">Data choices and requests</h2>
+        <p>Signed-in members can export and import learning data or permanently delete their account from Settings. Account deletion removes the profile, profile photo, access request information, and associated learning, exchange, and community data. To ask a question or request correction of information, use the <a href="contact.html">contact form</a>. We may need to verify account ownership before acting on a request.</p>
 
-        <h2>Children and account access</h2>
-        <p>Skillex is intended for people who can use an online learning service under the laws that apply to them. New accounts are currently created by the Skillex team after an access request; submitting a request does not automatically create an account.</p>
+        <h2 data-cms-key="eligibility-title" data-cms-label="Eligibility section heading">Children and account access</h2>
+        <p data-cms-key="eligibility-description" data-cms-label="Eligibility section text">Skillex is intended for people who can use an online learning service under the laws that apply to them. New accounts are currently created by the Skillex team after an access request; submitting a request does not automatically create an account.</p>
 
-        <h2>Policy updates</h2>
-        <p>This policy may be updated as Skillex changes. The date at the top indicates the latest revision. Continued use after an update means the revised policy is available for review.</p>
+        <h2 data-cms-key="updates-title" data-cms-label="Policy updates section heading">Policy updates</h2>
+        <p data-cms-key="updates-description" data-cms-label="Policy updates section text">This policy may be updated as Skillex changes. The date at the top indicates the latest revision. Continued use after an update means the revised policy is available for review.</p>
       </article>
     </main>
 
     <footer class="site-footer">
       <div class="container footer-content">
         <div class="footer-brand">
-          <p class="footer-built-by">BUILT BY</p>
-          <a class="footer-hydev" href="https://aliyujazuli.netlify.app" target="_blank" rel="noopener noreferrer" aria-label="Visit the HYDEV ecosystem">
-            <img src="assets/hydev-logo-tile.png" alt="HYDEV" width="116" height="90" />
-          </a>
           <p class="footer-copyright">&copy; 2026 Skillex. All rights reserved.</p>
-          <p class="footer-attribution">Skillex — A HYDEV product</p>
-          <a href="privacy.html" aria-current="page">Privacy Policy</a>
-          <a href="terms.html">Terms and Conditions</a>
+          <a class="footer-hydev" href="https://aliyujazuli.netlify.app/" aria-label="Visit Aliyu Muhammad Jazuli's website">
+            <img src="assets/hydev-logo-tile.png" alt="" width="116" height="90" loading="lazy" decoding="async" />
+          </a>
+          <p class="footer-attribution">Skillex &mdash; A HYDEV product</p>
         </div>
       </div>
     </footer>
@@ -87,6 +116,8 @@
     <script src="js/backend.js"></script>
     <script src="js/modules/learning-data.js"></script>
     <script src="js/modules/learning-ui.js"></script>
+    <script src="js/app-version.js"></script>
+    <script src="js/app-lifecycle.js"></script>
     <script src="js/script.js"></script>
   </body>
 </html>

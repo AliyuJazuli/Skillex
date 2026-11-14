@@ -5,13 +5,13 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Skillex | Where people exchange skills, share knowledge, and grow together.</title>
     <meta name="description" content="Skillex is a platform where people exchange skills, share knowledge, connect with others, and grow together." />
-    <meta name="author" content="Aliyu Jazuli" />
-    <meta name="creator" content="Aliyu Jazuli" />
+    <meta name="author" content="Aliyu Muhammad Jazuli" />
+    <meta name="creator" content="Aliyu Muhammad Jazuli" />
     <meta name="publisher" content="HYDEV" />
     <meta name="google-site-verification" content="KygdRzP9SjeJACyAkETodHC9Zl6L5okWZuWyTA2SWU0" />
     <meta name="application-name" content="Skillex" />
     <meta name="theme-color" content="#176b56" />
-    <link rel="icon" href="assets/favicon.ico" sizes="any" />
+    <link rel="icon" href="assets/skillex-icon-32.png" type="image/png" sizes="32x32" />
     <link rel="icon" href="assets/skillex-logo.svg" type="image/svg+xml" />
     <link rel="apple-touch-icon" href="assets/skillex-icon-180.png" />
     <link rel="manifest" href="site.webmanifest" />
@@ -20,16 +20,16 @@
     <meta property="og:site_name" content="Skillex" />
     <meta property="og:title" content="Skillex | Where people exchange skills, share knowledge, and grow together." />
     <meta property="og:description" content="Skillex is a platform where people exchange skills, share knowledge, connect with others, and grow together." />
-    <meta property="og:image" content="https://skillex-hydev.netlify.app/assets/skillex-social.png" />
+    <meta property="og:image" content="https://skillex-hydev.netlify.app/assets/skillex-icon-512.png" />
     <meta property="og:image:type" content="image/png" />
-    <meta property="og:image:width" content="1200" />
-    <meta property="og:image:height" content="630" />
-    <meta property="og:image:alt" content="Skillex logo: Where people exchange skills, share knowledge, and grow together." />
-    <meta name="twitter:card" content="summary_large_image" />
+    <meta property="og:image:width" content="512" />
+    <meta property="og:image:height" content="512" />
+    <meta property="og:image:alt" content="Skillex app icon" />
+    <meta name="twitter:card" content="summary" />
     <meta name="twitter:title" content="Skillex | Where people exchange skills, share knowledge, and grow together." />
     <meta name="twitter:description" content="Skillex is a platform where people exchange skills, share knowledge, connect with others, and grow together." />
-    <meta name="twitter:image" content="https://skillex-hydev.netlify.app/assets/skillex-social.png" />
-    <meta name="twitter:image:alt" content="Skillex logo: Where people exchange skills, share knowledge, and grow together." />
+    <meta name="twitter:image" content="https://skillex-hydev.netlify.app/assets/skillex-icon-512.png" />
+    <meta name="twitter:image:alt" content="Skillex app icon" />
     <meta property="og:url" content="https://skillex-hydev.netlify.app" />
     <meta name="robots" content="index, follow, max-image-preview:large" />
     <meta name="keywords" content="Skillex, skill exchange, peer learning, knowledge sharing" />
@@ -91,9 +91,35 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
     <script src="js/theme-init.js"></script>
-    <link rel="stylesheet" href="css/style.css" />
+    <style>
+      body[data-page-loading="true"] > :not(.page-skeleton) { visibility: hidden !important; }
+      .page-skeleton { position: fixed; inset: 0; z-index: 5000; display: block; overflow: auto; background: #f7f7f2; color: #182b25; font: 16px/1.5 "DM Sans", "Segoe UI", sans-serif; }
+      .page-skeleton[data-visible="false"] { display: none; }
+      .page-skeleton__top, .page-skeleton__nav, .page-skeleton__main { width: min(1200px, calc(100% - 3rem)); margin-inline: auto; }
+      .page-skeleton__top { min-height: 76px; display: flex; align-items: center; justify-content: space-between; gap: 1rem; border-bottom: 1px solid #dfe7df; }
+      .page-skeleton__brand, .page-skeleton__nav, .page-skeleton__chips, .page-skeleton__actions { display: flex; align-items: center; gap: .75rem; }
+      .page-skeleton__nav { min-height: 58px; justify-content: center; }
+      .page-skeleton__block { display: block; min-width: 0; border-radius: .65rem; background: linear-gradient(100deg,#e9eee9 20%,#f4f6f2 42%,#e9eee9 64%); background-size: 220% 100%; animation: page-skeleton-shimmer 1.8s ease-in-out infinite; }
+      .page-skeleton__block--logo { width: 2.2rem; height: 2.2rem; border-radius: .7rem; }
+      .page-skeleton__block--brand-name { width: 5rem; height: 1.1rem; }
+      .page-skeleton__block--action { width: 5rem; height: 2.6rem; border-radius: .8rem; }
+      .page-skeleton__block--nav-item { width: 5.2rem; height: 2rem; border-radius: 999px; }
+      .page-skeleton__main { padding-block: 2.5rem 4rem; }
+      @keyframes page-skeleton-shimmer { to { background-position-x: -220%; } }
+      @media (max-width: 760px) {
+        .page-skeleton__top, .page-skeleton__nav, .page-skeleton__main { width: calc(100% - 2.25rem); }
+        .page-skeleton__top { min-height: 68px; }
+        .page-skeleton__nav { justify-content: flex-start; overflow: hidden; }
+        .page-skeleton__nav .page-skeleton__block--nav-item:nth-child(n + 5) { display: none; }
+        .page-skeleton__main { padding-block: 2rem 3.5rem; }
+      }
+      @media (prefers-reduced-motion: reduce) { .page-skeleton__block { animation: none; } }
+      html.dark .page-skeleton { background: #111b17; color: #eef4ef; }
+      html.dark .page-skeleton__block { background: linear-gradient(100deg,#21332b 20%,#34483e 42%,#21332b 64%); background-size: 220% 100%; }
+    </style>    <link rel="stylesheet" href="css/style.css" />
   </head>
   <body>
+    <script src="js/page-skeleton.js"></script>
     <header class="site-header">
       <nav class="navbar container">
         <a href="index.html" class="logo">Skillex</a>
@@ -110,41 +136,41 @@
       <section class="hero">
         <div class="container hero-grid">
           <div class="hero-copy">
-            <p class="eyebrow">Free exchange, real growth</p>
-            <h1>Where people exchange skills, share knowledge, and grow together.</h1>
-            <p class="hero-text">
+            <p class="eyebrow" data-cms-key="hero-eyebrow" data-cms-label="Hero eyebrow">Free exchange, real growth</p>
+            <h1 data-cms-key="hero-title" data-cms-label="Hero heading">Where people exchange skills, share knowledge, and grow together.</h1>
+            <p class="hero-text" data-cms-key="hero-description" data-cms-label="Hero description">
               Skillex connects university students so they can teach what they know, learn what they need, and build confidence without spending money.
             </p>
             <div class="hero-actions">
-              <a href="browse.html" class="btn">Get Started</a>
-              <a href="browse.html" class="btn btn-secondary">Browse Skills</a>
+              <a href="signup.html" class="btn" data-auth="request-access" data-cms-key="request-access-label" data-cms-label="Request access button">Request access</a>
+              <a href="browse.html" class="btn btn-secondary" data-cms-key="explore-skills-label" data-cms-label="Explore skills button">Explore skills</a>
             </div>
             <ul class="hero-highlights">
-              <li>Explore practical learning paths</li>
-              <li>Learn directly from peers</li>
-              <li>Track your learning progress</li>
+              <li data-cms-key="highlight-one" data-cms-label="Hero highlight one">Explore practical learning paths</li>
+              <li data-cms-key="highlight-two" data-cms-label="Hero highlight two">Learn directly from peers</li>
+              <li data-cms-key="highlight-three" data-cms-label="Hero highlight three">Track your learning progress</li>
             </ul>
           </div>
 
           <div class="hero-card">
             <div class="hero-card__top">
-              <span class="chip">Learn by sharing</span>
-              <h3>Peer-to-peer learning made simple</h3>
+              <span class="chip" data-cms-key="hero-card-label" data-cms-label="Hero card label">Learn by sharing</span>
+              <h3 data-cms-key="hero-card-title" data-cms-label="Hero card title">Peer-to-peer learning made simple</h3>
             </div>
             <div class="hero-card__stats">
               <div>
                 <strong>Learn</strong>
-                <span>Build a skill step by step</span>
+                <span data-cms-key="hero-learn-description" data-cms-label="Learn card text">Build a skill step by step</span>
               </div>
               <div>
                 <strong>Share</strong>
-                <span>Teach what you know</span>
+                <span data-cms-key="hero-share-description" data-cms-label="Share card text">Teach what you know</span>
               </div>
             </div>
             <div class="hero-card__list">
-              <div>HTML & CSS</div>
-              <div>JavaScript</div>
-              <div>Public Speaking</div>
+              <div data-cms-key="hero-skill-one" data-cms-label="Hero skill one">HTML & CSS</div>
+              <div data-cms-key="hero-skill-two" data-cms-label="Hero skill two">JavaScript</div>
+              <div data-cms-key="hero-skill-three" data-cms-label="Hero skill three">Public Speaking</div>
             </div>
           </div>
         </div>
@@ -152,34 +178,34 @@
 
       <section class="section container">
         <div class="section-heading">
-          <p class="eyebrow">Popular Skills</p>
-          <h2>Explore skills to learn and share.</h2>
+          <p class="eyebrow" data-cms-key="popular-eyebrow" data-cms-label="Popular skills eyebrow">Popular Skills</p>
+          <h2 data-cms-key="popular-title" data-cms-label="Popular skills heading">Explore skills to learn and share.</h2>
         </div>
 
         <div class="skills-grid">
           <article class="skill-card">
-            <h3>HTML & CSS</h3>
-            <p>Build polished pages and modern layouts with confidence.</p>
+            <h3 data-cms-key="skill-html-title" data-cms-label="HTML and CSS card title">HTML & CSS</h3>
+            <p data-cms-key="skill-html-description" data-cms-label="HTML and CSS card description">Build polished pages and modern layouts with confidence.</p>
           </article>
           <article class="skill-card">
-            <h3>JavaScript</h3>
-            <p>Learn interactive logic, websites, and small apps.</p>
+            <h3 data-cms-key="skill-js-title" data-cms-label="JavaScript card title">JavaScript</h3>
+            <p data-cms-key="skill-js-description" data-cms-label="JavaScript card description">Learn interactive logic, websites, and small apps.</p>
           </article>
           <article class="skill-card">
-            <h3>Python</h3>
-            <p>Practice coding fundamentals and automation projects.</p>
+            <h3 data-cms-key="skill-python-title" data-cms-label="Python card title">Python</h3>
+            <p data-cms-key="skill-python-description" data-cms-label="Python card description">Practice coding fundamentals and automation projects.</p>
           </article>
           <article class="skill-card">
-            <h3>UI/UX Design</h3>
-            <p>Shape better digital experiences with thoughtful design.</p>
+            <h3 data-cms-key="skill-uiux-title" data-cms-label="UI and UX card title">UI/UX Design</h3>
+            <p data-cms-key="skill-uiux-description" data-cms-label="UI and UX card description">Shape better digital experiences with thoughtful design.</p>
           </article>
           <article class="skill-card">
-            <h3>Graphic Design</h3>
-            <p>Create visuals that stand out for portfolios and social posts.</p>
+            <h3 data-cms-key="skill-graphic-title" data-cms-label="Graphic design card title">Graphic Design</h3>
+            <p data-cms-key="skill-graphic-description" data-cms-label="Graphic design card description">Create visuals that stand out for portfolios and social posts.</p>
           </article>
           <article class="skill-card">
-            <h3>Photography</h3>
-            <p>Capture striking shots with composition and storytelling.</p>
+            <h3 data-cms-key="skill-photo-title" data-cms-label="Photography card title">Photography</h3>
+            <p data-cms-key="skill-photo-description" data-cms-label="Photography card description">Capture striking shots with composition and storytelling.</p>
           </article>
         </div>
       </section>
@@ -187,22 +213,22 @@
       <section class="section section-alt">
         <div class="container">
           <div class="section-heading">
-            <p class="eyebrow">How it works</p>
-            <h2>A simple path from curious to confident.</h2>
+            <p class="eyebrow" data-cms-key="steps-eyebrow" data-cms-label="How it works eyebrow">How it works</p>
+            <h2 data-cms-key="steps-title" data-cms-label="How it works heading">A simple path from curious to confident.</h2>
           </div>
 
           <div class="steps-grid">
             <article class="info-card">
-              <h3>1. Create your profile</h3>
-              <p>Share the skills you already know and the ones you want to learn.</p>
+              <h3 data-cms-key="step-one-title" data-cms-label="Step one title">1. Create your profile</h3>
+              <p data-cms-key="step-one-description" data-cms-label="Step one description">Share the skills you already know and the ones you want to learn.</p>
             </article>
             <article class="info-card">
-              <h3>2. Match with peers</h3>
-              <p>Find learners whose skills overlap with what you want to learn or teach.</p>
+              <h3 data-cms-key="step-two-title" data-cms-label="Step two title">2. Match with peers</h3>
+              <p data-cms-key="step-two-description" data-cms-label="Step two description">Find learners whose skills overlap with what you want to learn or teach.</p>
             </article>
             <article class="info-card">
-              <h3>3. Exchange and grow</h3>
-              <p>Send a request, agree on a session, and build momentum together.</p>
+              <h3 data-cms-key="step-three-title" data-cms-label="Step three title">3. Exchange and grow</h3>
+              <p data-cms-key="step-three-description" data-cms-label="Step three description">Send a request, agree on a session, and build momentum together.</p>
             </article>
           </div>
         </div>
@@ -210,27 +236,27 @@
 
       <section class="section container">
         <div class="section-heading">
-          <p class="eyebrow">How Skillex helps</p>
-          <h2>A more collaborative way to learn.</h2>
+          <p class="eyebrow" data-cms-key="benefits-eyebrow" data-cms-label="Benefits eyebrow">How Skillex helps</p>
+          <h2 data-cms-key="benefits-title" data-cms-label="Benefits heading">A more collaborative way to learn.</h2>
         </div>
 
         <div class="testimonial-grid">
           <article class="testimonial-card">
-            <h3>Follow a learning path</h3>
-            <p>Work through practical lessons at your own pace and keep your progress in one place.</p>
+            <h3 data-cms-key="benefit-one-title" data-cms-label="Benefit one title">Follow a learning path</h3>
+            <p data-cms-key="benefit-one-description" data-cms-label="Benefit one description">Work through practical lessons at your own pace and keep your progress in one place.</p>
           </article>
           <article class="testimonial-card">
-            <h3>Learn through exchange</h3>
-            <p>Connect learning with teaching by sharing the skills you already have.</p>
+            <h3 data-cms-key="benefit-two-title" data-cms-label="Benefit two title">Learn through exchange</h3>
+            <p data-cms-key="benefit-two-description" data-cms-label="Benefit two description">Connect learning with teaching by sharing the skills you already have.</p>
           </article>
         </div>
       </section>
 
-      <section class="section cta-section">
+      <section class="section cta-section" data-auth="guest-home-cta">
         <div class="container cta-box">
-          <h2>Ready to share your skills and learn faster?</h2>
-          <p>Explore a skill, start learning, or get in touch with the Skillex team.</p>
-          <a href="signup.html" class="btn">Request access</a>
+          <h2 data-cms-key="cta-title" data-cms-label="Home call to action heading">Ready to share your skills and learn faster?</h2>
+          <p data-cms-key="cta-description" data-cms-label="Home call to action description">Explore a skill, start learning, or get in touch with the Skillex team.</p>
+          <a href="signup.html" class="btn" data-cms-key="cta-label" data-cms-label="Home call to action button">Request access</a>
         </div>
       </section>
     </main>
@@ -238,18 +264,11 @@
     <footer class="site-footer">
       <div class="container footer-content">
         <div class="footer-brand">
-          <p class="footer-built-by">BUILT BY</p>
-          <a class="footer-hydev" href="https://aliyujazuli.netlify.app" target="_blank" rel="noopener noreferrer" aria-label="Visit the HYDEV ecosystem">
-            <img src="assets/hydev-logo-tile.png" alt="HYDEV" width="116" height="90" />
-          </a>
           <p class="footer-copyright">&copy; 2026 Skillex. All rights reserved.</p>
-          <p class="footer-attribution">Skillex — A HYDEV product</p>
-        </div>
-        <div class="footer-links">
-          <a href="index.html">Home</a>
-          <a href="browse.html">Browse</a>
-          <a href="contact.html">Contact</a>
-          <a href="privacy.html">Privacy Policy</a>
+          <a class="footer-hydev" href="https://aliyujazuli.netlify.app/" aria-label="Visit Aliyu Muhammad Jazuli's website">
+            <img src="assets/hydev-logo-tile.png" alt="" width="116" height="90" loading="lazy" decoding="async" />
+          </a>
+          <p class="footer-attribution">Skillex &mdash; A HYDEV product</p>
         </div>
       </div>
     </footer>
@@ -260,6 +279,8 @@
     <script src="js/backend.js"></script>
     <script src="js/modules/learning-data.js"></script>
     <script src="js/modules/learning-ui.js"></script>
+    <script src="js/app-version.js"></script>
+    <script src="js/app-lifecycle.js"></script>
     <script src="js/script.js"></script>
   </body>
 </html>

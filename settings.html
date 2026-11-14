@@ -6,7 +6,7 @@
     <title>Skillex | Settings</title>
     <meta name="description" content="Manage your Skillex appearance and personal learning-data backup." />
     <meta name="theme-color" content="#176b56" />
-    <link rel="icon" href="assets/favicon.ico" sizes="any" />
+    <link rel="icon" href="assets/skillex-icon-32.png" type="image/png" sizes="32x32" />
     <link rel="icon" href="assets/skillex-logo.svg" type="image/svg+xml" />
     <link rel="apple-touch-icon" href="assets/skillex-icon-180.png" />
     <link rel="manifest" href="site.webmanifest" />
@@ -15,10 +15,36 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
     <script src="js/theme-init.js"></script>
-    <link rel="stylesheet" href="css/style.css" />
+    <style>
+      body[data-page-loading="true"] > :not(.page-skeleton) { visibility: hidden !important; }
+      .page-skeleton { position: fixed; inset: 0; z-index: 5000; display: block; overflow: auto; background: #f7f7f2; color: #182b25; font: 16px/1.5 "DM Sans", "Segoe UI", sans-serif; }
+      .page-skeleton[data-visible="false"] { display: none; }
+      .page-skeleton__top, .page-skeleton__nav, .page-skeleton__main { width: min(1200px, calc(100% - 3rem)); margin-inline: auto; }
+      .page-skeleton__top { min-height: 76px; display: flex; align-items: center; justify-content: space-between; gap: 1rem; border-bottom: 1px solid #dfe7df; }
+      .page-skeleton__brand, .page-skeleton__nav, .page-skeleton__chips, .page-skeleton__actions { display: flex; align-items: center; gap: .75rem; }
+      .page-skeleton__nav { min-height: 58px; justify-content: center; }
+      .page-skeleton__block { display: block; min-width: 0; border-radius: .65rem; background: linear-gradient(100deg,#e9eee9 20%,#f4f6f2 42%,#e9eee9 64%); background-size: 220% 100%; animation: page-skeleton-shimmer 1.8s ease-in-out infinite; }
+      .page-skeleton__block--logo { width: 2.2rem; height: 2.2rem; border-radius: .7rem; }
+      .page-skeleton__block--brand-name { width: 5rem; height: 1.1rem; }
+      .page-skeleton__block--action { width: 5rem; height: 2.6rem; border-radius: .8rem; }
+      .page-skeleton__block--nav-item { width: 5.2rem; height: 2rem; border-radius: 999px; }
+      .page-skeleton__main { padding-block: 2.5rem 4rem; }
+      @keyframes page-skeleton-shimmer { to { background-position-x: -220%; } }
+      @media (max-width: 760px) {
+        .page-skeleton__top, .page-skeleton__nav, .page-skeleton__main { width: calc(100% - 2.25rem); }
+        .page-skeleton__top { min-height: 68px; }
+        .page-skeleton__nav { justify-content: flex-start; overflow: hidden; }
+        .page-skeleton__nav .page-skeleton__block--nav-item:nth-child(n + 5) { display: none; }
+        .page-skeleton__main { padding-block: 2rem 3.5rem; }
+      }
+      @media (prefers-reduced-motion: reduce) { .page-skeleton__block { animation: none; } }
+      html.dark .page-skeleton { background: #111b17; color: #eef4ef; }
+      html.dark .page-skeleton__block { background: linear-gradient(100deg,#21332b 20%,#34483e 42%,#21332b 64%); background-size: 220% 100%; }
+    </style>    <link rel="stylesheet" href="css/style.css" />
     <meta name="robots" content="noindex, nofollow" />
   </head>
   <body>
+    <script src="js/page-skeleton.js"></script>
     <header class="site-header">
       <nav class="navbar container">
         <a href="index.html" class="logo">Skillex</a>
@@ -29,78 +55,207 @@
       </nav>
     </header>
 
-    <main class="container page-shell">
-      <section class="page-hero">
-        <p class="eyebrow">Your preferences</p>
-        <h1>Settings</h1>
-        <p>Control the app appearance and keep a portable backup of your learning progress.</p>
+    <main class="container page-shell settings-page">
+      <section class="settings-hero">
+        <div>
+          <p class="eyebrow" data-cms-key="hero-eyebrow" data-cms-label="Settings eyebrow">Your workspace</p>
+          <h1 data-cms-key="hero-title" data-cms-label="Settings heading">Settings</h1>
+          <p data-cms-key="hero-description" data-cms-label="Settings introduction">Make Skillex feel right, manage your app, and keep your account in good shape.</p>
+        </div>
+        <p class="settings-save-note"><span aria-hidden="true"></span> Your preferences save automatically</p>
       </section>
 
-      <form class="settings-grid" id="settings-form">
-        <section class="settings-card">
-          <p class="eyebrow">Appearance</p>
-          <h2>Theme</h2>
-          <label for="theme-preference">Choose how Skillex looks</label>
-          <select id="theme-preference" name="theme">
-            <option value="system">Follow system</option>
-            <option value="light">Light</option>
-            <option value="dark">Dark</option>
-          </select>
-          <p class="muted">Follow system updates automatically when your device appearance changes.</p>
-        </section>
+      <div class="settings-layout">
+        <nav class="settings-nav" aria-label="Settings sections">
+          <a href="#appearance-settings">Appearance</a>
+          <a href="#app-settings">App &amp; updates</a>
+          <a href="#notification-settings">Notifications</a>
+          <a href="#accessibility-settings">Accessibility</a>
+          <a href="#data-settings">Your data</a>
+          <a href="#security-settings">Security</a>
+          <a href="#account-settings">Account</a>
+        </nav>
 
-        <section class="settings-card">
-          <p class="eyebrow">Your data</p>
-          <h2>Backup learning data</h2>
-          <p>Export saved skills, lessons, notes, quiz results, progress, and your appearance preference. Backups are tied to this account and do not contain your password or session.</p>
-          <div class="detail-actions">
-            <button class="btn" id="export-data" type="button">Export my data</button>
-            <label class="btn btn-secondary file-button" for="import-data">Import backup</label>
-            <input id="import-data" type="file" accept="application/json,.json" hidden />
-          </div>
-          <p class="muted">Importing replaces saved learning data for this account. Only use a backup you trust.</p>
-        </section>
-      </form>
+        <div class="settings-content">
+          <form id="settings-form" class="settings-form">
+            <section class="settings-card settings-theme-card" id="appearance-settings" aria-labelledby="appearance-heading">
+              <div class="settings-card__heading">
+                <div>
+                  <p class="eyebrow">Appearance</p>
+                  <h2 id="appearance-heading">Set the mood</h2>
+                </div>
+                <span class="settings-current-value" id="theme-current-value">System</span>
+              </div>
+              <label class="settings-field-label" for="theme-preference">Choose how Skillex looks</label>
+              <div class="theme-slider" id="theme-slider">
+                <input id="theme-preference" name="theme" type="range" min="0" max="2" step="1" value="0"
+                  aria-valuetext="Follow system" aria-describedby="theme-preference-status" />
+              </div>
+              <div class="theme-slider__labels" aria-hidden="true">
+                <span data-theme-label="system"><strong>System</strong><small>Match device</small></span>
+                <span data-theme-label="light"><strong>Light</strong><small>Bright and clear</small></span>
+                <span data-theme-label="dark"><strong>Dark</strong><small>Easy on the eyes</small></span>
+              </div>
+              <p class="settings-status" id="theme-preference-status" role="status" aria-live="polite">Follow system updates automatically when your device appearance changes.</p>
+            </section>
 
-      <form class="settings-grid password-settings" id="password-change-form">
-        <section class="settings-card">
-          <p class="eyebrow">Account security</p>
-          <h2>Change password</h2>
-          <p>Confirm your current password before choosing a new one. If you have forgotten it, email yourself a secure reset link instead.</p>
-          <label>
-            Current password
-            <input type="password" name="currentPassword" autocomplete="current-password" required />
-          </label>
-          <label>
-            New password
-            <input type="password" name="newPassword" autocomplete="new-password" minlength="8" maxlength="128" required />
-          </label>
-          <label>
-            Confirm new password
-            <input type="password" name="confirmPassword" autocomplete="new-password" minlength="8" maxlength="128" required />
-          </label>
-          <div class="detail-actions">
-            <button class="btn" type="submit">Update password</button>
-            <button class="btn btn-secondary" id="settings-reset-password" type="button">Email me a reset link</button>
-          </div>
-          <p class="form-status" id="password-change-status" role="status" aria-live="polite"></p>
-        </section>
-      </form>
+            <section class="settings-card" id="notification-settings" aria-labelledby="notification-heading">
+              <div class="settings-card__heading">
+                <div>
+                  <p class="eyebrow">Notifications</p>
+                  <h2 id="notification-heading">Stay in the loop</h2>
+                </div>
+                <span class="settings-card__icon" aria-hidden="true">01</span>
+              </div>
+              <p>Choose whether Skillex checks for updates to your skill exchanges while you are here.</p>
+              <label class="settings-switch" for="swap-notifications">
+                <span><strong>Exchange updates</strong><small>In-app alerts for new and changed requests.</small></span>
+                <input id="swap-notifications" type="checkbox" role="switch" checked />
+              </label>
+            </section>
 
-      <p class="settings-privacy">Review how your information is handled in the <a href="privacy.html">Privacy Policy</a> and read the <a href="terms.html">Terms and Conditions</a>.</p>
+            <section class="settings-card" id="accessibility-settings" aria-labelledby="accessibility-heading">
+              <div class="settings-card__heading">
+                <div>
+                  <p class="eyebrow">Accessibility</p>
+                  <h2 id="accessibility-heading">Motion preferences</h2>
+                </div>
+                <span class="settings-card__icon" aria-hidden="true">02</span>
+              </div>
+              <p>Reduce animation and smooth scrolling across the app.</p>
+              <label class="settings-switch" for="reduce-motion">
+                <span><strong>Reduce motion</strong><small>Limit non-essential movement and transitions.</small></span>
+                <input id="reduce-motion" type="checkbox" role="switch" />
+              </label>
+            </section>
+
+            <section class="settings-card settings-data-card" id="data-settings" aria-labelledby="data-heading">
+              <div class="settings-card__heading">
+                <div>
+                  <p class="eyebrow">Your data</p>
+                  <h2 id="data-heading">Keep a learning backup</h2>
+                </div>
+                <span class="settings-card__icon" aria-hidden="true">03</span>
+              </div>
+              <p>Save your skills, lessons, notes, quiz results, progress, and appearance preference. Backups never include your password or session.</p>
+              <div class="detail-actions">
+                <button class="btn" id="export-data" type="button">Export my data</button>
+                <label class="btn btn-tertiary file-button" for="import-data">Import backup</label>
+                <input id="import-data" type="file" accept="application/json,.json" hidden />
+              </div>
+              <p class="settings-status">Importing replaces saved learning data for this account. Only use a backup you trust.</p>
+            </section>
+          </form>
+
+          <section class="settings-card settings-app-card" id="app-settings" aria-labelledby="app-settings-heading">
+            <div class="settings-card__heading">
+              <div>
+                <p class="eyebrow">App &amp; updates</p>
+                <h2 id="app-settings-heading">Skillex on this device</h2>
+              </div>
+              <span class="settings-current-value" id="app-version">Version 2026.11.14</span>
+            </div>
+            <div class="settings-app-actions">
+              <article class="settings-app-action">
+                <div>
+                  <h3>Install the app</h3>
+                  <p>Open Skillex in its own app window and get to your learning faster.</p>
+                </div>
+                <button class="btn" id="install-app" type="button">Install Skillex</button>
+                <p class="settings-status" id="app-install-status" role="status" aria-live="polite">Install Skillex on this device.</p>
+              </article>
+              <article class="settings-app-action">
+                <div>
+                  <h3>App updates</h3>
+                  <p>Check for a newer version. You choose when to switch.</p>
+                </div>
+                <button class="btn btn-secondary" id="check-app-update" type="button">Check for updates</button>
+                <p class="settings-status" id="app-update-status" role="status" aria-live="polite">Checking for updates when Settings opens.</p>
+              </article>
+            </div>
+          </section>
+
+          <form class="settings-card settings-security-card" id="password-change-form" aria-labelledby="security-heading">
+            <div class="settings-card__heading">
+              <div>
+                <p class="eyebrow">Account security</p>
+                <h2 id="security-heading">Change your password</h2>
+              </div>
+              <span class="settings-card__icon" aria-hidden="true">04</span>
+            </div>
+            <p>Confirm your current password before choosing a new one, or send yourself a secure reset link.</p>
+            <div class="settings-password-fields">
+              <label>
+                Current password
+                <input type="password" name="currentPassword" autocomplete="current-password" required />
+              </label>
+              <label>
+                New password
+                <input type="password" name="newPassword" autocomplete="new-password" minlength="8" maxlength="128" required />
+              </label>
+              <label>
+                Confirm new password
+                <input type="password" name="confirmPassword" autocomplete="new-password" minlength="8" maxlength="128" required />
+              </label>
+            </div>
+            <div class="detail-actions">
+              <button class="btn" type="submit">Update password</button>
+              <button class="btn btn-secondary" id="settings-reset-password" type="button">Email me a reset link</button>
+            </div>
+            <p class="form-status" id="password-change-status" role="status" aria-live="polite"></p>
+          </form>
+
+          <section class="settings-card settings-danger-zone" id="account-settings" aria-labelledby="delete-account-heading">
+            <div>
+              <p class="eyebrow">Danger zone</p>
+              <h2 id="delete-account-heading">Delete account</h2>
+              <p>Permanently delete your account, profile, learning progress, and exchange data. This cannot be undone.</p>
+            </div>
+            <button class="btn btn-danger" id="delete-account-open" type="button">Delete account</button>
+          </section>
+
+          <p class="settings-privacy">Review how your information is handled in the <a href="privacy.html">Privacy Policy</a> and read the <a href="terms.html">Terms and Conditions</a>.</p>
+        </div>
+      </div>
     </main>
+
+    <dialog class="delete-account-dialog" id="delete-account-dialog" aria-labelledby="delete-account-dialog-title" aria-describedby="delete-account-description">
+      <form id="delete-account-form" class="delete-account-dialog__content">
+        <p class="eyebrow">This action is permanent</p>
+        <h2 id="delete-account-dialog-title">Delete your account?</h2>
+        <p id="delete-account-description">Your profile and learning data will be permanently deleted. Enter your current password and type DELETE to confirm.</p>
+        <label for="delete-account-password">Current password</label>
+        <input id="delete-account-password" name="password" type="password" autocomplete="current-password" required />
+        <label for="delete-account-confirmation">Type DELETE to confirm</label>
+        <input id="delete-account-confirmation" name="confirmation" type="text" autocomplete="off" autocapitalize="characters" spellcheck="false" pattern="DELETE" required />
+        <p class="form-status" id="delete-account-status" role="status" aria-live="polite"></p>
+        <div class="detail-actions">
+          <button class="btn btn-tertiary" id="delete-account-cancel" type="button">Keep my account</button>
+          <button class="btn btn-danger" id="delete-account-confirm" type="submit">Delete permanently</button>
+        </div>
+      </form>
+    </dialog>
+
+    <dialog class="app-update-dialog" id="app-update-dialog" aria-labelledby="app-update-title" aria-describedby="app-update-description">
+      <div class="app-update-dialog__content">
+        <p class="eyebrow">A newer version is ready</p>
+        <h2 id="app-update-title">Update Skillex?</h2>
+        <p id="app-update-description">You can install the latest version now or keep using the current version and update later.</p>
+        <div class="detail-actions">
+          <button class="btn btn-tertiary" id="keep-current-version" type="button">Keep using current version</button>
+          <button class="btn" id="apply-app-update" type="button">Update now</button>
+        </div>
+      </div>
+    </dialog>
 
     <footer class="site-footer">
       <div class="container footer-content">
         <div class="footer-brand">
-          <p class="footer-built-by">BUILT BY</p>
-          <a class="footer-hydev" href="https://aliyujazuli.netlify.app" target="_blank" rel="noopener noreferrer" aria-label="Visit the HYDEV ecosystem">
-            <img src="assets/hydev-logo-tile.png" alt="HYDEV" width="116" height="90" />
-          </a>
           <p class="footer-copyright">&copy; 2026 Skillex. All rights reserved.</p>
-          <p class="footer-attribution">Skillex — A HYDEV product</p>
-          <a href="privacy.html">Privacy Policy</a>
-          <a href="terms.html">Terms and Conditions</a>
+          <a class="footer-hydev" href="https://aliyujazuli.netlify.app/" aria-label="Visit Aliyu Muhammad Jazuli's website">
+            <img src="assets/hydev-logo-tile.png" alt="" width="116" height="90" loading="lazy" decoding="async" />
+          </a>
+          <p class="footer-attribution">Skillex &mdash; A HYDEV product</p>
         </div>
       </div>
     </footer>
@@ -111,6 +266,8 @@
     <script src="js/backend.js"></script>
     <script src="js/modules/learning-data.js"></script>
     <script src="js/modules/learning-ui.js"></script>
+    <script src="js/app-version.js"></script>
+    <script src="js/app-lifecycle.js"></script>
     <script src="js/script.js"></script>
   </body>
 </html>
